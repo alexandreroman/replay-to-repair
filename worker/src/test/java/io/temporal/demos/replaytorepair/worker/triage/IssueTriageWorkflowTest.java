@@ -47,7 +47,7 @@ class IssueTriageWorkflowTest {
         assertThat(result.assignedOwner()).isEqualTo("alice");
         // The reason threads end to end from the activity result; with the demo bug present the
         // activity produces this exact value.
-        assertThat(result.assignmentReason()).isEqualTo("hardcoded for testing");
+        assertThat(result.assignmentReason()).isEqualTo("optimal owner for anomaly triage");
         assertThat(result.currentStep()).isEqualTo(TriageStatus.Step.DONE);
     }
 }
