@@ -42,8 +42,8 @@
             <version>${temporal.version}</version>
         </dependency>
 
-        <!-- Spring AI (Anthropic / Claude): powers the owner-selection
-             Activity that calls out to the LLM. -->
+        <!-- Spring AI model starter: powers the owner-selection Activity that
+             calls out to the LLM. The artifact below selects the model provider. -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-anthropic</artifactId>

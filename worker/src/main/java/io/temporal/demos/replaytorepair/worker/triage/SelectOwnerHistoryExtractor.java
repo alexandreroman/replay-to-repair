@@ -20,7 +20,7 @@ import io.temporal.common.converter.DataConverter;
  * the failing activity, using the SDK's default {@link DataConverter}, and feed them straight into
  * a regression test.
  */
-public final class SelectOwnerHistoryExtractor {
+final class SelectOwnerHistoryExtractor {
     // Default activity type name = the activity method name, capitalized.
     private static final String SELECT_OWNER_ACTIVITY_TYPE = "SelectOwner";
 
@@ -28,10 +28,10 @@ public final class SelectOwnerHistoryExtractor {
     }
 
     /** The decoded input of a single {@code selectOwner} activity invocation. */
-    public record SelectOwnerInput(Issue issue, List<OwnerProfile> profiles) {
+    record SelectOwnerInput(Issue issue, List<OwnerProfile> profiles) {
     }
 
-    public static SelectOwnerInput fromFile(Path path) {
+    static SelectOwnerInput fromFile(Path path) {
         try {
             return fromJson(Files.readString(path));
         } catch (IOException e) {
@@ -39,7 +39,7 @@ public final class SelectOwnerHistoryExtractor {
         }
     }
 
-    public static SelectOwnerInput fromJson(String historyJson) {
+    static SelectOwnerInput fromJson(String historyJson) {
         var history = WorkflowExecutionHistory.fromJson(historyJson);
         var scheduledEvent = history.getEvents().stream()
                 .filter(event -> event.getEventType() == EventType.EVENT_TYPE_ACTIVITY_TASK_SCHEDULED)

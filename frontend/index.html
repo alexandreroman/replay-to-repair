@@ -27,7 +27,7 @@
         class="shrink-0 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white
                shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
       >
-        <span x-text="generating ? 'Generating…' : 'Generate a bug'"></span>
+        <span x-text="generating ? 'Generating…' : 'Generate an issue'"></span>
       </button>
     </header>
 
@@ -63,29 +63,29 @@
 
     <!-- Empty state. -->
     <div
-      x-show="bugs.length === 0"
+      x-show="issues.length === 0"
       x-cloak
       class="rounded-lg border border-dashed border-slate-300 bg-white/50 p-10 text-center
              text-sm text-slate-400"
     >
-      No bugs yet — click “Generate a bug” to start a triage.
+      No issues yet — click “Generate an issue” to start a triage.
     </div>
 
     <!-- One card per workflow, sorted most-recent first. -->
     <div class="space-y-4">
-      <template x-for="bug in bugs" :key="bug.workflowId">
+      <template x-for="issue in issues" :key="issue.workflowId">
         <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-start justify-between gap-4">
-            <h3 class="font-medium leading-snug" x-text="bug.issueTitle"></h3>
-            <template x-if="bug.assignedOwner">
+            <h3 class="font-medium leading-snug" x-text="issue.issueTitle"></h3>
+            <template x-if="issue.assignedOwner">
               <span
                 class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium
                        text-emerald-700"
               >
-                <span x-text="bug.assignedOwner"></span>
+                <span x-text="issue.assignedOwner"></span>
               </span>
             </template>
-            <template x-if="!bug.assignedOwner">
+            <template x-if="!issue.assignedOwner">
               <span class="shrink-0 text-xs text-slate-400">triaging…</span>
             </template>
           </div>
@@ -94,10 +94,10 @@
           <div class="mt-4 flex gap-1.5">
             <template x-for="step in steps" :key="step">
               <div class="flex-1">
-                <div class="h-1.5 rounded-full" :class="segmentClass(bug, step)"></div>
+                <div class="h-1.5 rounded-full" :class="segmentClass(issue, step)"></div>
                 <p
                   class="mt-1.5 text-[10px] leading-tight"
-                  :class="labelClass(bug, step)"
+                  :class="labelClass(issue, step)"
                   x-text="stepLabels[step]"
                 ></p>
               </div>
@@ -127,7 +127,7 @@
       };
 
       return {
-        bugs: [],
+        issues: [],
         reachable: true,
         generating: false,
         steps: STEPS,
@@ -140,13 +140,13 @@
 
         async refresh() {
           try {
-            const res = await fetch("/api/bugs");
+            const res = await fetch("/api/issues");
             if (!res.ok) {
               throw new Error("unexpected status " + res.status);
             }
             const data = await res.json();
             // Most recent first; entries with no timestamp sink to the bottom.
-            this.bugs = data.sort((a, b) => this.receivedTime(b) - this.receivedTime(a));
+            this.issues = data.sort((a, b) => this.receivedTime(b) - this.receivedTime(a));
             this.reachable = true;
           } catch (e) {
             this.reachable = false;
@@ -156,7 +156,7 @@
         async generate() {
           this.generating = true;
           try {
-            const res = await fetch("/api/bugs/generate", { method: "POST" });
+            const res = await fetch("/api/issues/generate", { method: "POST" });
             if (!res.ok) {
               throw new Error("unexpected status " + res.status);
             }
@@ -169,8 +169,8 @@
           }
         },
 
-        receivedTime(bug) {
-          return bug.receivedAt ? Date.parse(bug.receivedAt) : 0;
+        receivedTime(issue) {
+          return issue.receivedAt ? Date.parse(issue.receivedAt) : 0;
         },
 
         stepIndex(step) {
@@ -179,10 +179,10 @@
 
         // A step is completed once the workflow moved past it (or reached DONE), active while it
         // is the current step, and pending otherwise.
-        segmentClass(bug, step) {
-          const current = this.stepIndex(bug.currentStep);
+        segmentClass(issue, step) {
+          const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
-          if (bug.currentStep === "DONE" || index < current) {
+          if (issue.currentStep === "DONE" || index < current) {
             return "bg-emerald-500";
           }
           if (index === current) {
@@ -191,10 +191,10 @@
           return "bg-slate-200";
         },
 
-        labelClass(bug, step) {
-          const current = this.stepIndex(bug.currentStep);
+        labelClass(issue, step) {
+          const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
-          if (bug.currentStep === "DONE" || index < current) {
+          if (issue.currentStep === "DONE" || index < current) {
             return "text-emerald-600";
           }
           if (index === current) {
@@ -207,9 +207,9 @@
         // Nothing is hardcoded: the list grows purely from the API responses.
         owners() {
           const counts = {};
-          for (const bug of this.bugs) {
-            if (bug.assignedOwner) {
-              counts[bug.assignedOwner] = (counts[bug.assignedOwner] || 0) + 1;
+          for (const issue of this.issues) {
+            if (issue.assignedOwner) {
+              counts[issue.assignedOwner] = (counts[issue.assignedOwner] || 0) + 1;
             }
           }
           return Object.entries(counts)

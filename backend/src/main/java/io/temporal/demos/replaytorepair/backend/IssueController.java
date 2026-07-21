@@ -25,9 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
  * reads their state through the Visibility API, Queries and Results. There is no database.
  */
 @RestController
-@RequestMapping(path = "/api/bugs", produces = MediaType.APPLICATION_JSON_VALUE)
-class BugController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BugController.class);
+@RequestMapping(path = "/api/issues", produces = MediaType.APPLICATION_JSON_VALUE)
+class IssueController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IssueController.class);
 
     /** Visibility query used to discover every triage execution, open or closed. */
     private static final String LIST_QUERY = "WorkflowType='" + IssueTriageWorkflow.WORKFLOW_TYPE + "'";
@@ -67,7 +67,7 @@ class BugController {
 
     private final WorkflowClient workflowClient;
 
-    BugController(WorkflowClient workflowClient) {
+    IssueController(WorkflowClient workflowClient) {
         this.workflowClient = workflowClient;
     }
 
@@ -100,7 +100,7 @@ class BugController {
      * back to a neutral "waiting for worker" view when the Query cannot be answered.
      */
     @GetMapping
-    List<BugView> list() {
+    List<IssueView> list() {
         try (Stream<WorkflowExecutionMetadata> executions = workflowClient.listExecutions(LIST_QUERY)) {
             return executions
                     .map(this::resolve)
@@ -108,7 +108,7 @@ class BugController {
         }
     }
 
-    private BugView resolve(WorkflowExecutionMetadata execution) {
+    private IssueView resolve(WorkflowExecutionMetadata execution) {
         var workflowId = execution.getExecution().getWorkflowId();
         var running = execution.getStatus() == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_RUNNING;
         var stub = workflowClient.newUntypedWorkflowStub(workflowId);
@@ -116,7 +116,7 @@ class BugController {
             var status = running
                     ? stub.query("getStatus", TriageStatus.class)
                     : stub.getResult(TriageStatus.class);
-            return new BugView(workflowId, status.issueTitle(), status.currentStep(),
+            return new IssueView(workflowId, status.issueTitle(), status.currentStep(),
                     status.assignedOwner(), status.receivedAt());
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
@@ -126,9 +126,9 @@ class BugController {
         }
     }
 
-    private BugView neutralView(WorkflowExecutionMetadata execution) {
+    private IssueView neutralView(WorkflowExecutionMetadata execution) {
         var workflowId = execution.getExecution().getWorkflowId();
-        return new BugView(workflowId, issueTitleFromMemo(execution),
+        return new IssueView(workflowId, issueTitleFromMemo(execution),
                 TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime());
     }
 
@@ -141,12 +141,12 @@ class BugController {
         }
     }
 
-    /** Response of {@code POST /api/bugs/generate}. */
+    /** Response of {@code POST /api/issues/generate}. */
     record GenerateResponse(String workflowId, Issue issue) {
     }
 
     /** One dashboard card: a stable workflow id plus the flattened {@link TriageStatus} fields. */
-    record BugView(
+    record IssueView(
             String workflowId,
             String issueTitle,
             TriageStatus.Step currentStep,

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Exposes a ready-to-use {@link ChatClient} so activities can inject it directly instead of the
- * builder. Spring AI auto-configures the {@link ChatClient.Builder} from the Anthropic starter.
+ * builder. Spring AI auto-configures the {@link ChatClient.Builder} from the configured model starter.
  */
 @Configuration(proxyBeanMethods = false)
 class ChatClientConfiguration {

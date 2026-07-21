@@ -18,7 +18,7 @@ public class TriageActivitiesImpl implements TriageActivities {
     private final ChatClient chatClient;
 
     // The ChatClient is injected directly (not the builder) so tests can pass a mock.
-    public TriageActivitiesImpl(ChatClient chatClient) {
+    TriageActivitiesImpl(ChatClient chatClient) {
         this.chatClient = chatClient;
     }
 
