@@ -14,49 +14,214 @@
     x-init="init()"
     class="mx-auto max-w-3xl px-6 py-12"
   >
-    <header class="mb-8">
-      <h1 class="text-2xl font-semibold tracking-tight">replay-to-repair</h1>
-      <p class="mt-1 text-sm text-slate-500">
-        AI issue-triage dashboard — event-history replay demo
-      </p>
+    <header class="mb-8 flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight">replay-to-repair</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          AI issue-triage dashboard — event-history replay demo
+        </p>
+      </div>
+      <button
+        @click="generate()"
+        :disabled="generating"
+        class="shrink-0 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white
+               shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
+      >
+        <span x-text="generating ? 'Generating…' : 'Generate a bug'"></span>
+      </button>
     </header>
 
-    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">Backend status</p>
-          <p class="mt-1 text-lg font-semibold" x-text="statusLabel"></p>
-        </div>
-        <span
-          class="inline-flex h-3 w-3 rounded-full"
-          :class="healthy ? 'bg-emerald-500' : 'bg-slate-300'"
-        ></span>
+    <!-- Subtle hint shown only when the API cannot be reached. -->
+    <p
+      x-show="!reachable"
+      x-cloak
+      class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+    >
+      Backend unreachable — retrying…
+    </p>
+
+    <!-- Owners summary, fully derived from the workflows returned by the API. -->
+    <section x-show="owners().length > 0" x-cloak class="mb-8">
+      <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+        Owners
+      </h2>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="owner in owners()" :key="owner.name">
+          <span
+            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200
+                   bg-white px-3 py-1 text-sm shadow-sm"
+          >
+            <span class="font-medium" x-text="owner.name"></span>
+            <span
+              class="rounded-full bg-slate-100 px-1.5 text-xs text-slate-500"
+              x-text="owner.count"
+            ></span>
+          </span>
+        </template>
       </div>
-      <p class="mt-4 text-xs text-slate-400">
-        Everything on this dashboard is derived from the API — no hardcoded
-        owners or counts. Triage controls are added in the implementation phase.
-      </p>
     </section>
+
+    <!-- Empty state. -->
+    <div
+      x-show="bugs.length === 0"
+      x-cloak
+      class="rounded-lg border border-dashed border-slate-300 bg-white/50 p-10 text-center
+             text-sm text-slate-400"
+    >
+      No bugs yet — click “Generate a bug” to start a triage.
+    </div>
+
+    <!-- One card per workflow, sorted most-recent first. -->
+    <div class="space-y-4">
+      <template x-for="bug in bugs" :key="bug.workflowId">
+        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <h3 class="font-medium leading-snug" x-text="bug.issueTitle"></h3>
+            <template x-if="bug.assignedOwner">
+              <span
+                class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium
+                       text-emerald-700"
+              >
+                <span x-text="bug.assignedOwner"></span>
+              </span>
+            </template>
+            <template x-if="!bug.assignedOwner">
+              <span class="shrink-0 text-xs text-slate-400">triaging…</span>
+            </template>
+          </div>
+
+          <!-- 5-step progress indicator matching the Step enum. -->
+          <div class="mt-4 flex gap-1.5">
+            <template x-for="step in steps" :key="step">
+              <div class="flex-1">
+                <div class="h-1.5 rounded-full" :class="segmentClass(bug, step)"></div>
+                <p
+                  class="mt-1.5 text-[10px] leading-tight"
+                  :class="labelClass(bug, step)"
+                  x-text="stepLabels[step]"
+                ></p>
+              </div>
+            </template>
+          </div>
+        </article>
+      </template>
+    </div>
   </div>
 
   <script>
     function dashboard() {
+      // Order matches the backend TriageStatus.Step enum exactly.
+      const STEPS = [
+        "ISSUE_RECEIVED",
+        "PROFILES_LOADED",
+        "AI_ANALYSIS",
+        "OWNER_SELECTED",
+        "DONE",
+      ];
+      const STEP_LABELS = {
+        ISSUE_RECEIVED: "Received",
+        PROFILES_LOADED: "Profiles",
+        AI_ANALYSIS: "AI analysis",
+        OWNER_SELECTED: "Selected",
+        DONE: "Done",
+      };
+
       return {
-        healthy: false,
-        statusLabel: "checking…",
-        async init() {
+        bugs: [],
+        reachable: true,
+        generating: false,
+        steps: STEPS,
+        stepLabels: STEP_LABELS,
+
+        init() {
+          this.refresh();
+          setInterval(() => this.refresh(), 1500);
+        },
+
+        async refresh() {
           try {
-            const res = await fetch("/api/status");
-            const body = await res.json();
-            this.healthy = body.status === "ok";
-            this.statusLabel = this.healthy ? "online" : "degraded";
+            const res = await fetch("/api/bugs");
+            if (!res.ok) {
+              throw new Error("unexpected status " + res.status);
+            }
+            const data = await res.json();
+            // Most recent first; entries with no timestamp sink to the bottom.
+            this.bugs = data.sort((a, b) => this.receivedTime(b) - this.receivedTime(a));
+            this.reachable = true;
           } catch (e) {
-            this.healthy = false;
-            this.statusLabel = "unreachable";
+            this.reachable = false;
           }
+        },
+
+        async generate() {
+          this.generating = true;
+          try {
+            const res = await fetch("/api/bugs/generate", { method: "POST" });
+            if (!res.ok) {
+              throw new Error("unexpected status " + res.status);
+            }
+            this.reachable = true;
+            await this.refresh();
+          } catch (e) {
+            this.reachable = false;
+          } finally {
+            this.generating = false;
+          }
+        },
+
+        receivedTime(bug) {
+          return bug.receivedAt ? Date.parse(bug.receivedAt) : 0;
+        },
+
+        stepIndex(step) {
+          return this.steps.indexOf(step);
+        },
+
+        // A step is completed once the workflow moved past it (or reached DONE), active while it
+        // is the current step, and pending otherwise.
+        segmentClass(bug, step) {
+          const current = this.stepIndex(bug.currentStep);
+          const index = this.stepIndex(step);
+          if (bug.currentStep === "DONE" || index < current) {
+            return "bg-emerald-500";
+          }
+          if (index === current) {
+            return "bg-blue-500 animate-pulse";
+          }
+          return "bg-slate-200";
+        },
+
+        labelClass(bug, step) {
+          const current = this.stepIndex(bug.currentStep);
+          const index = this.stepIndex(step);
+          if (bug.currentStep === "DONE" || index < current) {
+            return "text-emerald-600";
+          }
+          if (index === current) {
+            return "font-medium text-blue-600";
+          }
+          return "text-slate-400";
+        },
+
+        // Union of non-null owners seen across all workflows, with per-owner assignment counts.
+        // Nothing is hardcoded: the list grows purely from the API responses.
+        owners() {
+          const counts = {};
+          for (const bug of this.bugs) {
+            if (bug.assignedOwner) {
+              counts[bug.assignedOwner] = (counts[bug.assignedOwner] || 0) + 1;
+            }
+          }
+          return Object.entries(counts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
         },
       };
     }
   </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
 </body>
 </html>
