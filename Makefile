@@ -64,10 +64,6 @@ app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reloa
 app-down: ## Stop and remove the containers
 	docker compose down
 
-.PHONY: app-logs
-app-logs: ## Follow logs from the running containers
-	docker compose logs -f
-
 ##@ Quality
 
 .PHONY: test

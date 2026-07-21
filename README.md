@@ -1,39 +1,24 @@
-# replay-to-repair
+# Replay-to-Repair
 
-Turns a Temporal event history into a permanent regression test. This is a
-conference/workshop demo that shows how to debug a production failure by
-replaying the **exact payload** that flowed through the system — no guessing,
-no synthetic data — reproducing the bug locally, writing a test from the
-captured input, fixing it, and redeploying under real conditions.
+Temporal durably records the complete event history of every Workflow
+Execution — every input and every result, in order. That unlocks something no
+ordinary system can offer: take the exact history of a failure that happened in
+**production** and replay it, deterministically, on a **local dev machine** —
+stepping through the real execution in a debugger with the very payload that
+triggered the bug.
+
+This is a conference/workshop demo built on that capability. It turns a Temporal
+event history into a permanent regression test: replay the **exact payload**
+that flowed through the system — no guessing, no synthetic data — reproduce the
+bug locally, write a test from the captured input, fix it, and redeploy under
+real conditions.
 
 The scenario: an AI triage agent assigns incoming issues to developers
 ("owners") based on their specialties. In production, every recent issue lands
 on the same owner. The root cause is a debug line accidentally committed in the
 owner-selection Activity — an early return that short-circuits the LLM call.
-Because the bug lives in the **Activity**, replaying the Workflow alone (which
-reuses recorded Activity results) does not reproduce it: the real Activity
-input must be extracted from the history and executed directly.
-
-## Features
-
-- **Replay-to-repair workflow** — extract the real Activity input from a
-  downloaded event history and turn it into a JUnit regression test.
-- **Temporal as the only source of truth** — no database anywhere; workflow
-  state and history live entirely in Temporal.
-- **Live-restartable worker** — the worker runs as a local process (not in
-  containers) so it can be rebuilt and redeployed mid-demo in seconds.
-- **Graceful degradation** — reading a workflow's state works whether it is
-  running, completed, or the worker is momentarily offline (e.g. mid-redeploy).
-- **No build-step frontend** — a single static dashboard (Tailwind Play CDN +
-  Alpine.js) served through a Caddy gateway.
-
-## Project status
-
-The repository is bootstrapped and fully buildable. The Temporal wiring,
-dashboard, gateway, and container stack are in place, with a **placeholder**
-owner-selection Activity. The triage business logic, the fictional owner/issue
-dataset, the injected bug, the event-history extraction utility, and the JUnit
-replay test are the next implementation step (see [The demo](#the-demo)).
+Once the source of the failure is pinpointed in the **Activity**, the fix
+becomes straightforward — and it ships to production faster.
 
 ## Prerequisites
 
@@ -101,7 +86,6 @@ The end-to-end narrative the tooling drives (target flow):
 make app-up      # run the app: backend containerized, worker local (demo mode)
 make dev         # run the app: backend + worker local, hot reload (dev mode)
 make app-down    # stop and remove the containers
-make app-logs    # follow logs from the running containers
 make infra-up    # start only Temporal + gateway in containers
 make infra-down  # stop Temporal + gateway
 make test        # run the test suite for both Maven modules

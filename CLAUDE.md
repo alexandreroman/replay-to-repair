@@ -33,18 +33,6 @@ the containerized gateway proxies to it via `host.containers.internal`.
 - `frontend` — single static HTML page, no build step.
 - `gateway` — Caddy: serves the frontend, proxies `/api/*` to the backend.
 
-## Conventions
-
-- **No persistence** — Temporal is the only source of truth; no database.
-- **No common module** — shared types are duplicated in `backend` and `worker`.
-- **Bug lives in the Activity**, not the Workflow — this drives the replay
-  demo. The Workflow runs sequentially to completion with no early return.
-- **Neutral vocabulary** — fields/statuses say "owner", never "dev".
-- **Frontend derives everything from the API** — no hardcoded owners or counts.
-- Line length: 80 cols for text/Markdown, 120 for code.
-- Always use the latest stable versions; verify with context7 before adding a
-  dependency.
-
 ## Agents
 
 Use the following agents (from the
