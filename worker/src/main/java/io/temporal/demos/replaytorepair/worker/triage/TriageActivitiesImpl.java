@@ -42,12 +42,12 @@ public class TriageActivitiesImpl implements TriageActivities {
         // compiles: Java does not flag statements after `if (true) return` as unreachable code.
         var system = """
                 You are an issue-triage assistant. You are given a software issue and a list of
-                owners, each with a single specialty. Reply with the name of the one owner whose
-                specialty best matches the issue. Reply with the name only, nothing else.
+                owners, each with a single specialty. Pick the one owner whose specialty best
+                matches the issue.
                 """;
         var user = buildUserPrompt(issue, profiles);
-        var answer = chatClient.prompt().system(system).user(user).call().content();
-        return normalize(answer, profiles);
+        var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
+        return normalize(selection.owner(), profiles);
     }
 
     @Override
@@ -78,5 +78,9 @@ public class TriageActivitiesImpl implements TriageActivities {
                 .filter(name -> name.equalsIgnoreCase(candidate))
                 .findFirst()
                 .orElseGet(() -> profiles.getFirst().name());
+    }
+
+    /** Structured result of the owner-selection call: constrains the model to reply with JSON, not free text. */
+    record OwnerSelection(String owner) {
     }
 }

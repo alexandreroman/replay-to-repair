@@ -32,8 +32,9 @@ class SelectOwnerReplayTest {
 
         // A manual deep-stub mock (not @ExtendWith(MockitoExtension)) avoids strict-stubbing errors.
         var chatClient = Mockito.mock(ChatClient.class, Mockito.RETURNS_DEEP_STUBS);
-        when(chatClient.prompt().system(anyString()).user(anyString()).call().content())
-                .thenReturn("carol");
+        when(chatClient.prompt().system(anyString()).user(anyString()).call()
+                .entity(TriageActivitiesImpl.OwnerSelection.class))
+                .thenReturn(new TriageActivitiesImpl.OwnerSelection("carol"));
         var activities = new TriageActivitiesImpl(chatClient);
 
         var owner = activities.selectOwner(input.issue(), input.profiles());

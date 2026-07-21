@@ -14,3 +14,4 @@
 - [Code style conventions](references/code-style-conventions.md) — 80 cols text / 120 code; latest stable deps (verify via context7); no blank line after a class declaration
 - [Project status](references/project-status.md) — implementation progress and the next step (single place tracking done vs. remaining)
 - [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
+- [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String

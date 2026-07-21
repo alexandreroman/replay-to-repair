@@ -37,8 +37,9 @@ class GenerateHistoryFixtureTest {
             worker.registerWorkflowImplementationTypes(IssueTriageWorkflowImpl.class);
 
             var chatClient = Mockito.mock(ChatClient.class, Mockito.RETURNS_DEEP_STUBS);
-            when(chatClient.prompt().system(anyString()).user(anyString()).call().content())
-                    .thenReturn("carol");
+            when(chatClient.prompt().system(anyString()).user(anyString()).call()
+                    .entity(TriageActivitiesImpl.OwnerSelection.class))
+                    .thenReturn(new TriageActivitiesImpl.OwnerSelection("carol"));
             worker.registerActivitiesImplementations(new TriageActivitiesImpl(chatClient));
 
             env.start();
