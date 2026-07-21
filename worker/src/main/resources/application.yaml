@@ -1,6 +1,6 @@
 spring:
   application:
-    name: worker
+    name: replay-to-repair-worker
   # Temporal worker: task queues are derived from @WorkflowImpl / @ActivityImpl
   # annotations discovered in the package(s) below.
   temporal:

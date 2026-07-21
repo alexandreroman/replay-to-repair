@@ -1,6 +1,6 @@
 spring:
   application:
-    name: backend
+    name: replay-to-repair-backend
   # Temporal client connection. No workers run in this module.
   temporal:
     connection:
