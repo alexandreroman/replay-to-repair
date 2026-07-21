@@ -7,6 +7,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.temporal.api.enums.v1.EventType;
 import io.temporal.common.WorkflowExecutionHistory;
 import io.temporal.common.converter.DataConverter;
@@ -21,6 +24,8 @@ import io.temporal.common.converter.DataConverter;
  * a regression test.
  */
 final class SelectOwnerHistoryExtractor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectOwnerHistoryExtractor.class);
+
     // Default activity type name = the activity method name, capitalized.
     private static final String SELECT_OWNER_ACTIVITY_TYPE = "SelectOwner";
 
@@ -49,6 +54,9 @@ final class SelectOwnerHistoryExtractor {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No ActivityTaskScheduled event found for activity '"
                                 + SELECT_OWNER_ACTIVITY_TYPE + "'"));
+        LOGGER.atDebug()
+                .addKeyValue("activityType", SELECT_OWNER_ACTIVITY_TYPE)
+                .log("Found scheduled activity event in history");
 
         var payloads = Optional.of(scheduledEvent.getActivityTaskScheduledEventAttributes().getInput());
         var converter = DataConverter.getDefaultInstance();

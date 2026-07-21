@@ -10,8 +10,13 @@ import io.temporal.demos.replaytorepair.worker.triage.TriageStatus.Step;
 import io.temporal.spring.boot.WorkflowImpl;
 import io.temporal.workflow.Workflow;
 
+import org.slf4j.Logger;
+
 @WorkflowImpl(taskQueues = IssueTriageWorkflow.TASK_QUEUE)
 public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
+    // Replay-aware logger: Workflow.getLogger suppresses duplicate output during history replay.
+    private static final Logger LOGGER = Workflow.getLogger(IssueTriageWorkflowImpl.class);
+
     // Loading the owner profiles is fast, in-memory and idempotent, so it runs as a local activity
     // (no server round-trip). See BRIEF.md for why this step is treated differently.
     private final TriageActivities localActivities = Workflow.newLocalActivityStub(
@@ -39,6 +44,10 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         // workflow clock and keep it fixed for the whole execution.
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.ISSUE_RECEIVED, null, receivedAt);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueTitle", issue.title())
+                .log("Received issue for triage");
 
         var profiles = localActivities.loadProfiles();
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.PROFILES_LOADED, null, receivedAt);
@@ -46,9 +55,17 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
         var owner = activities.selectOwner(issue, profiles);
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("owner", owner)
+                .log("Owner selected");
 
         activities.notifyAssignment(issue, owner);
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("owner", owner)
+                .log("Triage complete");
         return currentStatus;
     }
 

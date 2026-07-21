@@ -24,12 +24,16 @@ public class TriageActivitiesImpl implements TriageActivities {
 
     @Override
     public List<OwnerProfile> loadProfiles() {
-        return List.of(
+        var profiles = List.of(
                 new OwnerProfile("alice", "backend"),
                 new OwnerProfile("bob", "infrastructure"),
                 new OwnerProfile("carol", "security"),
                 new OwnerProfile("dave", "frontend"),
                 new OwnerProfile("erin", "data"));
+        LOGGER.atDebug()
+                .addKeyValue("profileCount", profiles.size())
+                .log("Loaded owner profiles");
+        return profiles;
     }
 
     @Override
@@ -47,13 +51,22 @@ public class TriageActivitiesImpl implements TriageActivities {
                 """;
         var user = buildUserPrompt(issue, profiles);
         var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
-        return resolveOwner(selection.owner(), profiles);
+        var owner = resolveOwner(selection.owner(), profiles);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("owner", owner)
+                .log("Selected owner for issue");
+        return owner;
     }
 
     @Override
     public void notifyAssignment(Issue issue, String owner) {
         // No external notification in the demo: logging is enough to show the step ran.
-        LOGGER.info("Issue '{}' assigned to owner '{}'", issue.title(), owner);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("owner", owner)
+                .log("Notified issue assignment");
     }
 
     private static String buildUserPrompt(Issue issue, List<OwnerProfile> profiles) {

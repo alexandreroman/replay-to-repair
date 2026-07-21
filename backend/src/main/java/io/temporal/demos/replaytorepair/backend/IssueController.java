@@ -89,7 +89,11 @@ class IssueController {
 
         // Non-blocking start: returns as soon as the server acknowledges, before triage runs.
         WorkflowClient.start(workflow::triage, issue);
-        LOGGER.info("Started triage workflow {} for issue {}", workflowId, issue.id());
+        LOGGER.atInfo()
+                .addKeyValue("workflowId", workflowId)
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueTitle", issue.title())
+                .log("Started triage workflow");
 
         return new GenerateResponse(workflowId, issue);
     }
@@ -121,7 +125,10 @@ class IssueController {
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
             // whole endpoint: keep the dashboard usable by returning a neutral placeholder view.
-            LOGGER.warn("Could not resolve triage status for workflow {}: {}", workflowId, e.getMessage());
+            LOGGER.atWarn()
+                    .addKeyValue("workflowId", workflowId)
+                    .setCause(e)
+                    .log("Could not resolve triage status; returning neutral view");
             return neutralView(execution);
         }
     }
