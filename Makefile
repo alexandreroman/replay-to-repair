@@ -85,6 +85,43 @@ app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reloa
 app-down: ## Stop and remove the containers
 	$(COMPOSE) down
 
+##@ Workspace
+
+# Casper workspace setup hook: give each parallel workspace (Git worktree) its
+# own host ports so several worktrees can run the demo at once without
+# colliding. Runs once at workspace creation. No-op in a plain checkout, where
+# CASPER_PORT is unset and the compose/Makefile defaults (8080/7233/8233/8081)
+# apply unchanged.
+#
+# Ports are derived from the Casper-injected base CASPER_PORT (Casper reserves
+# CASPER_PORT..CASPER_PORT+10 for us):
+#   +0  gateway (browser entry point)
+#   +1  Temporal gRPC (local worker + local backend connect here)
+#   +2  Temporal Web UI
+#   +3  local backend in dev mode
+# All variables are $$-escaped so the shell — not Make — expands them.
+.PHONY: worktree-init
+worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_PORT)
+	@[ -n "$$CASPER_PORT" ] || exit 0; \
+		env_file=".env"; \
+		gateway_port=$$CASPER_PORT; \
+		temporal_grpc_port=$$((CASPER_PORT + 1)); \
+		temporal_ui_port=$$((CASPER_PORT + 2)); \
+		dev_backend_port=$$((CASPER_PORT + 3)); \
+		if [ -f "$$env_file" ]; then \
+			grep -vE '^(GATEWAY_PORT|TEMPORAL_GRPC_PORT|TEMPORAL_UI_PORT|DEV_BACKEND_PORT|TEMPORAL_ADDRESS)=' "$$env_file" > "$$env_file.casper.tmp" || true; \
+			mv "$$env_file.casper.tmp" "$$env_file"; \
+		fi; \
+		{ \
+			echo "# --- Casper workspace port remap (generated from base $$CASPER_PORT) ---"; \
+			echo "GATEWAY_PORT=$$gateway_port"; \
+			echo "TEMPORAL_GRPC_PORT=$$temporal_grpc_port"; \
+			echo "TEMPORAL_UI_PORT=$$temporal_ui_port"; \
+			echo "DEV_BACKEND_PORT=$$dev_backend_port"; \
+			echo "TEMPORAL_ADDRESS=localhost:$$temporal_grpc_port"; \
+		} >> "$$env_file"; \
+		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port temporal-ui=$$temporal_ui_port backend-dev=$$dev_backend_port"
+
 ##@ Quality
 
 .PHONY: test

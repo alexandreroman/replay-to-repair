@@ -1,0 +1,11 @@
+{
+  "workspace": {
+    "scripts": {
+      "setup": "make worktree-init",
+      "teardown": "make app-down",
+      "run": "make app-up",
+      "dev": "make dev",
+      "test": "make test"
+    }
+  }
+}

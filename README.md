@@ -60,6 +60,21 @@ Both serve the dashboard at <http://localhost:8080> and run the local processes
 in the foreground; press Ctrl-C to stop them, then `make app-down` to remove the
 containers. Run `make` (or `make help`) to list every target.
 
+### Casper
+
+Casper runs each workspace as an isolated Git worktree, so several workspaces
+can run this demo at once. Each workspace automatically gets its own host ports
+(gateway, Temporal, and backend, all derived from the injected `CASPER_PORT`)
+via the `setup` hook, which runs `make worktree-init`, so parallel workspaces
+never collide. `teardown` stops the containers when a workspace is closed. A
+plain (non-Casper) checkout keeps the default ports unchanged.
+
+| Command            | Runs         | Description                                  |
+| ------------------ | ------------ | -------------------------------------------- |
+| `casper run`       | `make app-up`| Launch the demo (backend containerized)      |
+| `casper run dev`   | `make dev`   | Local hot-reload mode (backend + worker)     |
+| `casper run test`  | `make test`  | Run the test suite for both Maven modules    |
+
 ## The demo
 
 The end-to-end narrative the tooling drives (target flow):
