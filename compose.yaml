@@ -49,7 +49,14 @@ services:
 
   # Caddy: serves the static frontend and reverse-proxies /api/* to the backend.
   # BACKEND_UPSTREAM lets `make dev` point the gateway at a locally-run backend
-  # (e.g. host.containers.internal:8081) instead of the backend container.
+  # instead of the backend container.
+  # The gateway is the ONLY container that must reach back to the host — the
+  # locally-run backend in `make dev`. Docker maps host.docker.internal via the
+  # host-gateway entry (required on Docker Engine/Linux, harmless on Docker
+  # Desktop). Podman provides host.containers.internal natively, so on Podman
+  # the Makefile overrides GATEWAY_HOST_MAPPING with a harmless placeholder to
+  # avoid Podman rootless's host-gateway resolution error. With no env set the
+  # default is the Docker behavior, so `docker compose ...` works directly.
   # No hard depends_on: the gateway starts even when the backend is absent
   # (dev) or not yet ready — Caddy simply returns 502 until the upstream is up.
   gateway:
@@ -59,6 +66,8 @@ services:
     volumes:
       - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./frontend:/srv:ro
+    extra_hosts:
+      - "${GATEWAY_HOST_MAPPING:-host.docker.internal:host-gateway}"
     environment:
       BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-backend:8080}
     healthcheck:

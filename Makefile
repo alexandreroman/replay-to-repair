@@ -22,22 +22,43 @@ export
 endif
 endif
 
+# Container tooling, auto-detected with no user action: Docker is preferred,
+# Podman is the fallback. Override with `make COMPOSE="..."` if needed.
+COMPOSE ?= $(shell \
+	if docker compose version >/dev/null 2>&1; then echo "docker compose"; \
+	elif podman compose version >/dev/null 2>&1; then echo "podman compose"; \
+	elif command -v podman-compose >/dev/null 2>&1; then echo "podman-compose"; \
+	else echo "docker compose"; fi)
+
 # In dev mode the containerized gateway proxies /api/* to the locally-run
-# backend through the container-runtime host alias.
-#   podman: host.containers.internal · Docker Desktop: host.docker.internal
+# backend through the container-runtime host alias, selected from the detected
+# tooling: Docker (default) uses host.docker.internal, mapped via a host-gateway
+# extra_hosts entry; Podman (fallback) provides host.containers.internal
+# natively and skips the host-gateway entry, which breaks Podman rootless.
+ifneq (,$(findstring podman,$(COMPOSE)))
 DEV_BACKEND_HOST ?= host.containers.internal
+# Harmless placeholder; real host access uses host.containers.internal
+# (avoids Podman rootless host-gateway error).
+GATEWAY_HOST_MAPPING ?= podman-host-gateway-unused.invalid:127.0.0.1
+else
+DEV_BACKEND_HOST ?= host.docker.internal
+GATEWAY_HOST_MAPPING ?= host.docker.internal:host-gateway
+endif
 DEV_BACKEND_PORT ?= 8081
+
+# Make the gateway host mapping visible to $(COMPOSE) in every target.
+export GATEWAY_HOST_MAPPING
 
 ##@ Infra
 
 .PHONY: infra-up
 infra-up: ## Start Temporal + gateway in containers
 	BACKEND_UPSTREAM=$(DEV_BACKEND_HOST):$(DEV_BACKEND_PORT) \
-		docker compose up -d temporal gateway
+		$(COMPOSE) up -d temporal gateway
 
 .PHONY: infra-down
 infra-down: ## Stop Temporal + gateway
-	docker compose stop temporal gateway
+	$(COMPOSE) stop temporal gateway
 
 ##@ Run
 
@@ -55,14 +76,14 @@ dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 
 .PHONY: app-up
 app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reload)
-	docker compose up -d --build
+	$(COMPOSE) up -d --build
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
 
 .PHONY: app-down
 app-down: ## Stop and remove the containers
-	docker compose down
+	$(COMPOSE) down
 
 ##@ Quality
 

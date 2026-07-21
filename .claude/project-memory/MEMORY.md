@@ -13,3 +13,4 @@
 - [Demo design constraints](references/demo-design-constraints.md) — bug lives in the Activity, Workflow runs to completion, neutral "owner" vocabulary
 - [Code style conventions](references/code-style-conventions.md) — 80 cols text / 120 code; always latest stable dependency versions (verify via context7)
 - [Project status](references/project-status.md) — implementation progress and the next step (single place tracking done vs. remaining)
+- [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
