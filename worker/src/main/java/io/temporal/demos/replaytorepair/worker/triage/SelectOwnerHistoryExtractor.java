@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -19,9 +18,9 @@ import io.temporal.common.converter.DataConverter;
  * produced by {@code temporal workflow show --output json}.
  *
  * <p>This is the core of the "replay to repair" workflow: instead of guessing which data triggered
- * a production bug, we decode the exact {@link Issue} and owner profiles that actually flowed into
- * the failing activity, using the SDK's default {@link DataConverter}, and feed them straight into
- * a regression test.
+ * a production bug, we decode the exact {@link Issue} that actually flowed into the failing
+ * activity, using the SDK's default {@link DataConverter}, and feed it straight into a regression
+ * test.
  */
 final class SelectOwnerHistoryExtractor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectOwnerHistoryExtractor.class);
@@ -33,7 +32,7 @@ final class SelectOwnerHistoryExtractor {
     }
 
     /** The decoded input of a single {@code selectOwner} activity invocation. */
-    record SelectOwnerInput(Issue issue, List<OwnerProfile> profiles) {
+    record SelectOwnerInput(Issue issue) {
     }
 
     static SelectOwnerInput fromFile(Path path) {
@@ -62,10 +61,6 @@ final class SelectOwnerHistoryExtractor {
         var converter = DataConverter.getDefaultInstance();
 
         var issue = converter.fromPayloads(0, payloads, Issue.class, Issue.class);
-        // Decode the second argument as an array to stay JDK-only (no Guava/Jackson type token):
-        // a JSON array decodes just as well into OwnerProfile[] as into List<OwnerProfile>.
-        var profiles = converter.fromPayloads(1, payloads, OwnerProfile[].class, OwnerProfile[].class);
-
-        return new SelectOwnerInput(issue, List.of(profiles));
+        return new SelectOwnerInput(issue);
     }
 }

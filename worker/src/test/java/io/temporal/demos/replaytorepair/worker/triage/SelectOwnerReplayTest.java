@@ -14,9 +14,9 @@ import static org.mockito.Mockito.when;
 /**
  * Reproduces the production bug from the captured event history, the "repair" half of the demo.
  *
- * <p>It replays the exact {@link Issue} and owner profiles that flowed into the failing
- * {@code selectOwner} activity in production, runs the activity directly against a stubbed LLM that
- * correctly answers {@code "carol"} (the security specialist), and asserts the assignment.
+ * <p>It replays the exact {@link Issue} that flowed into the failing {@code selectOwner} activity in
+ * production, runs the activity directly against a stubbed LLM that correctly answers
+ * {@code "carol"} (the security specialist), and asserts the assignment.
  *
  * <p>With the committed debug line present this is RED ({@code selectOwner} returns {@code "alice"}
  * without consulting the LLM). Removing that line makes it GREEN. Disabled so the normal build
@@ -37,7 +37,7 @@ class SelectOwnerReplayTest {
                 .thenReturn(new TriageActivitiesImpl.OwnerSelection("carol"));
         var activities = new TriageActivitiesImpl(chatClient);
 
-        var owner = activities.selectOwner(input.issue(), input.profiles());
+        var owner = activities.selectOwner(input.issue());
 
         assertThat(owner)
                 .as("A SQL-injection issue must be routed to the security specialist (carol), "

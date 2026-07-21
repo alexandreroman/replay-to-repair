@@ -16,3 +16,4 @@
 - [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
 - [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String
 - [Logging conventions](references/logging-conventions.md) — SLF4J 2.x fluent API with addKeyValue context; Workflow.getLogger in workflow code (replay-safe)
+- [Owner roster in a SkillsTool skill](references/skills-tool-owner-roster.md) — roster+rules live in SKILL.md loaded via spring-ai-agent-utils SkillsTool; build() returns ToolCallback

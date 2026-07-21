@@ -21,7 +21,6 @@ public record TriageStatus(
 
     public enum Step {
         ISSUE_RECEIVED,
-        PROFILES_LOADED,
         AI_ANALYSIS,
         OWNER_SELECTED,
         DONE

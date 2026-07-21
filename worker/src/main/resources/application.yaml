@@ -19,5 +19,11 @@ spring:
         options:
           model: ${ANTHROPIC_MODEL:claude-sonnet-5}
 
+# SkillsTool scans this location for <skill-name>/SKILL.md subfolders and
+# exposes each skill to the LLM as a tool (here: the issue-triage skill).
+triage:
+  skills:
+    location: classpath:/skills
+
 # The worker runs as a local process during the demo; keep console logs
 # human-readable (no structured/ECS format) so restarts are easy to follow.

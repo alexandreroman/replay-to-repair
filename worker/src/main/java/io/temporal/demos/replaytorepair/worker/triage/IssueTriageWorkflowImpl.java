@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 
 import io.temporal.activity.ActivityOptions;
-import io.temporal.activity.LocalActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.demos.replaytorepair.worker.triage.TriageStatus.Step;
 import io.temporal.spring.boot.WorkflowImpl;
@@ -16,14 +15,6 @@ import org.slf4j.Logger;
 public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     // Replay-aware logger: Workflow.getLogger suppresses duplicate output during history replay.
     private static final Logger LOGGER = Workflow.getLogger(IssueTriageWorkflowImpl.class);
-
-    // Loading the owner profiles is fast, in-memory and idempotent, so it runs as a local activity
-    // (no server round-trip). See BRIEF.md for why this step is treated differently.
-    private final TriageActivities localActivities = Workflow.newLocalActivityStub(
-            TriageActivities.class,
-            LocalActivityOptions.newBuilder()
-                    .setStartToCloseTimeout(Duration.ofSeconds(5))
-                    .build());
 
     // Owner selection calls the LLM (network I/O), so it stays a regular activity with retries.
     private final TriageActivities activities = Workflow.newActivityStub(
@@ -49,11 +40,8 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
                 .addKeyValue("issueTitle", issue.title())
                 .log("Received issue for triage");
 
-        var profiles = localActivities.loadProfiles();
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.PROFILES_LOADED, null, receivedAt);
-
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
-        var owner = activities.selectOwner(issue, profiles);
+        var owner = activities.selectOwner(issue);
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
