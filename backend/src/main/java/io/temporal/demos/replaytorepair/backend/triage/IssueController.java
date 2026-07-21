@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.backend;
+package io.temporal.demos.replaytorepair.backend.triage;
 
 import java.time.Instant;
 import java.util.List;

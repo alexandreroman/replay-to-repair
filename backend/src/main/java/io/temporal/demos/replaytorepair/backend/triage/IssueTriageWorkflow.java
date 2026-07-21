@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.backend;
+package io.temporal.demos.replaytorepair.backend.triage;
 
 import io.temporal.workflow.QueryMethod;
 import io.temporal.workflow.WorkflowInterface;
