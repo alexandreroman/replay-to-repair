@@ -47,7 +47,7 @@ public class TriageActivitiesImpl implements TriageActivities {
                 """;
         var user = buildUserPrompt(issue, profiles);
         var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
-        return normalize(selection.owner(), profiles);
+        return resolveOwner(selection.owner(), profiles);
     }
 
     @Override
@@ -69,15 +69,18 @@ public class TriageActivitiesImpl implements TriageActivities {
                 """.formatted(issue.title(), issue.description(), owners);
     }
 
-    // Keep the model honest: trim its answer, match it against a known owner (case-insensitive),
-    // and fall back to the first profile if the reply does not name a valid owner.
-    private static String normalize(String answer, List<OwnerProfile> profiles) {
+    // Keep the model honest: the reply must name one of the known owners. We trim it and match it
+    // case-insensitively; an unrecognized reply (including null or blank) is treated as a failure so
+    // Temporal retries the activity, rather than assigning an arbitrary owner.
+    private static String resolveOwner(String answer, List<OwnerProfile> profiles) {
         var candidate = answer == null ? "" : answer.trim();
         return profiles.stream()
                 .map(OwnerProfile::name)
                 .filter(name -> name.equalsIgnoreCase(candidate))
                 .findFirst()
-                .orElseGet(() -> profiles.getFirst().name());
+                .orElseThrow(() -> new IllegalStateException(
+                        "LLM returned an unknown owner '%s'; expected one of %s"
+                                .formatted(candidate, profiles.stream().map(OwnerProfile::name).toList())));
     }
 
     /** Structured result of the owner-selection call: constrains the model to reply with JSON, not free text. */
