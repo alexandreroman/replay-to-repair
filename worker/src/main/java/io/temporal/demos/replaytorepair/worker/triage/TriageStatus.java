@@ -13,6 +13,7 @@ import java.time.Instant;
  * on both sides.
  */
 public record TriageStatus(
+        String issueId,
         String issueTitle,
         Step currentStep,
         String assignedOwner,

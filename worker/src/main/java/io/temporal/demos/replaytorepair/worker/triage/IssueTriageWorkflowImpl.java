@@ -38,17 +38,17 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         // Never use Instant.now() inside workflow code: derive the timestamp from the deterministic
         // workflow clock and keep it fixed for the whole execution.
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
-        currentStatus = new TriageStatus(issue.title(), Step.ISSUE_RECEIVED, null, receivedAt);
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.ISSUE_RECEIVED, null, receivedAt);
 
         var profiles = localActivities.loadProfiles();
-        currentStatus = new TriageStatus(issue.title(), Step.PROFILES_LOADED, null, receivedAt);
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.PROFILES_LOADED, null, receivedAt);
 
-        currentStatus = new TriageStatus(issue.title(), Step.AI_ANALYSIS, null, receivedAt);
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
         var owner = activities.selectOwner(issue, profiles);
-        currentStatus = new TriageStatus(issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
 
         activities.notifyAssignment(issue, owner);
-        currentStatus = new TriageStatus(issue.title(), Step.DONE, owner, receivedAt);
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
         return currentStatus;
     }
 

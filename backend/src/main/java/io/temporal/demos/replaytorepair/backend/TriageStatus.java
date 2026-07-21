@@ -11,6 +11,7 @@ import java.time.Instant;
  * (Jackson JSON).
  */
 public record TriageStatus(
+        String issueId,
         String issueTitle,
         Step currentStep,
         String assignedOwner,
