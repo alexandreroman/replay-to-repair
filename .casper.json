@@ -1,5 +1,6 @@
 {
   "workspace": {
+    "copyFiles": [".env", ".env.local"],
     "scripts": {
       "setup": "make worktree-init",
       "teardown": "make app-down",
