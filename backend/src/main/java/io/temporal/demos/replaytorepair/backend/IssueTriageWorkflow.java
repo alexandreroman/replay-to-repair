@@ -13,7 +13,6 @@ import io.temporal.workflow.WorkflowMethod;
  */
 @WorkflowInterface
 public interface IssueTriageWorkflow {
-
     String TASK_QUEUE = "issue-triage";
 
     /** Registered workflow type name, used to discover executions via the Visibility API. */

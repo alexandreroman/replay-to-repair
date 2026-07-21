@@ -13,7 +13,6 @@ import io.temporal.spring.boot.ActivityImpl;
 @Component
 @ActivityImpl(taskQueues = IssueTriageWorkflow.TASK_QUEUE)
 public class TriageActivitiesImpl implements TriageActivities {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(TriageActivitiesImpl.class);
 
     private final ChatClient chatClient;

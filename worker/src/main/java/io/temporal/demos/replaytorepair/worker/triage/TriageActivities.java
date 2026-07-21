@@ -6,7 +6,6 @@ import io.temporal.activity.ActivityInterface;
 
 @ActivityInterface
 public interface TriageActivities {
-
     List<OwnerProfile> loadProfiles();
 
     String selectOwner(Issue issue, List<OwnerProfile> profiles);

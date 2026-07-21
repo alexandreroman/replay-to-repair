@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 @Disabled("Replay demo: run from the IDE to reproduce the production bug, then remove the debug "
         + "line in TriageActivitiesImpl.selectOwner to go green")
 class SelectOwnerReplayTest {
-
     @Test
     void assignsSecurityIssueToSecuritySpecialist() {
         var input = SelectOwnerHistoryExtractor.fromFile(

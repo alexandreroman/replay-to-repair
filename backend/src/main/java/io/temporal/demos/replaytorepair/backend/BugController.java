@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = "/api/bugs", produces = MediaType.APPLICATION_JSON_VALUE)
 class BugController {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(BugController.class);
 
     /** Visibility query used to discover every triage execution, open or closed. */

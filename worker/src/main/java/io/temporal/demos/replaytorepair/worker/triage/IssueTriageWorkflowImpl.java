@@ -12,7 +12,6 @@ import io.temporal.workflow.Workflow;
 
 @WorkflowImpl(taskQueues = IssueTriageWorkflow.TASK_QUEUE)
 public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
-
     // Loading the owner profiles is fast, in-memory and idempotent, so it runs as a local activity
     // (no server round-trip). See BRIEF.md for why this step is treated differently.
     private final TriageActivities localActivities = Workflow.newLocalActivityStub(

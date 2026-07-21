@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration(proxyBeanMethods = false)
 class ChatClientConfiguration {
-
     @Bean
     ChatClient chatClient(ChatClient.Builder builder) {
         return builder.build();

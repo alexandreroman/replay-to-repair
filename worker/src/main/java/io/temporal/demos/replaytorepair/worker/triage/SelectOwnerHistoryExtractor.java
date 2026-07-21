@@ -21,7 +21,6 @@ import io.temporal.common.converter.DataConverter;
  * a regression test.
  */
 public final class SelectOwnerHistoryExtractor {
-
     // Default activity type name = the activity method name, capitalized.
     private static final String SELECT_OWNER_ACTIVITY_TYPE = "SelectOwner";
 

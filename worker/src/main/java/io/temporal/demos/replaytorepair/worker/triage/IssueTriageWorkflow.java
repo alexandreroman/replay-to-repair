@@ -14,7 +14,6 @@ import io.temporal.workflow.WorkflowMethod;
  */
 @WorkflowInterface
 public interface IssueTriageWorkflow {
-
     /** Task queue the worker polls for this workflow and its activities. */
     String TASK_QUEUE = "issue-triage";
 

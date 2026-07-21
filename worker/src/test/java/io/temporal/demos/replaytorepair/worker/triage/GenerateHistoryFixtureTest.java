@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
  */
 @Disabled("Regenerate the committed history fixture on demand")
 class GenerateHistoryFixtureTest {
-
     private static final Path FIXTURE_PATH = Path.of("src/test/resources/history/select-owner-failure.json");
 
     @Test
