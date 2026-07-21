@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: worker
+  # Temporal worker: task queues are derived from @WorkflowImpl / @ActivityImpl
+  # annotations discovered in the package(s) below.
+  temporal:
+    connection:
+      target: ${TEMPORAL_ADDRESS:localhost:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers-auto-discovery:
+      packages:
+        - io.temporal.demos.replaytorepair.worker.triage
+  # Anthropic (Claude) via Spring AI powers the owner-selection Activity.
+  # ANTHROPIC_API_KEY is required to run the worker.
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+
+# The worker runs as a local process during the demo; keep console logs
+# human-readable (no structured/ECS format) so restarts are easy to follow.

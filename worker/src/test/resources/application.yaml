@@ -1,0 +1,10 @@
+# Start an in-memory Temporal test server and provide a dummy LLM key so the
+# context-load test needs neither an external Temporal instance nor a real
+# Anthropic API key.
+spring:
+  temporal:
+    test-server:
+      enabled: true
+  ai:
+    anthropic:
+      api-key: test-key

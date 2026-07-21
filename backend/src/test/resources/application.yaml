@@ -1,0 +1,6 @@
+# Start an in-memory Temporal test server for the context-load test so the
+# suite needs no external Temporal instance.
+spring:
+  temporal:
+    test-server:
+      enabled: true

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: backend
+  # Temporal client connection. No workers run in this module.
+  temporal:
+    connection:
+      target: ${TEMPORAL_ADDRESS:localhost:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

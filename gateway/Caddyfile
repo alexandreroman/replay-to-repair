@@ -1,0 +1,21 @@
+{
+	admin off
+	auto_https off
+}
+
+# Single entry point for the demo: static dashboard + API reverse proxy.
+:80 {
+	encode gzip
+
+	# API calls go to the backend container.
+	handle /api/* {
+		reverse_proxy {$BACKEND_UPSTREAM:backend:8080}
+	}
+
+	# Everything else is the static frontend (SPA-style fallback).
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

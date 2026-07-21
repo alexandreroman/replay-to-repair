@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>replay-to-repair — triage dashboard</title>
+  <!-- Tailwind Play CDN + Alpine.js: no build step. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="h-full text-slate-800">
+  <div
+    x-data="dashboard()"
+    x-init="init()"
+    class="mx-auto max-w-3xl px-6 py-12"
+  >
+    <header class="mb-8">
+      <h1 class="text-2xl font-semibold tracking-tight">replay-to-repair</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        AI issue-triage dashboard — event-history replay demo
+      </p>
+    </header>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-500">Backend status</p>
+          <p class="mt-1 text-lg font-semibold" x-text="statusLabel"></p>
+        </div>
+        <span
+          class="inline-flex h-3 w-3 rounded-full"
+          :class="healthy ? 'bg-emerald-500' : 'bg-slate-300'"
+        ></span>
+      </div>
+      <p class="mt-4 text-xs text-slate-400">
+        Everything on this dashboard is derived from the API — no hardcoded
+        owners or counts. Triage controls are added in the implementation phase.
+      </p>
+    </section>
+  </div>
+
+  <script>
+    function dashboard() {
+      return {
+        healthy: false,
+        statusLabel: "checking…",
+        async init() {
+          try {
+            const res = await fetch("/api/status");
+            const body = await res.json();
+            this.healthy = body.status === "ok";
+            this.statusLabel = this.healthy ? "online" : "degraded";
+          } catch (e) {
+            this.healthy = false;
+            this.statusLabel = "unreachable";
+          }
+        },
+      };
+    }
+  </script>
+</body>
+</html>
