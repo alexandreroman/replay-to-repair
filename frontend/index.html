@@ -175,6 +175,13 @@
             </template>
           </div>
 
+          <!-- Issue description, hidden when the backend sends none. -->
+          <p
+            x-show="issue.issueDescription"
+            class="mt-3 text-sm leading-relaxed text-neutral-400"
+            x-text="issue.issueDescription"
+          ></p>
+
           <!-- 5-step progress indicator matching the Step enum. -->
           <div class="mt-6 flex gap-2">
             <template x-for="step in steps" :key="step">

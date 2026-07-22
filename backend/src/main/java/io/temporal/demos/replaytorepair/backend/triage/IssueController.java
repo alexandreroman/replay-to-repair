@@ -35,6 +35,12 @@ class IssueController {
      */
     private static final String MEMO_ISSUE_TITLE = "issueTitle";
 
+    /**
+     * Memo key carrying the issue description. Stored at start time so the dashboard can still show
+     * the description even while the worker is offline (Query unavailable).
+     */
+    private static final String MEMO_ISSUE_DESCRIPTION = "issueDescription";
+
     private final WorkflowClient workflowClient;
     private final IssueGenerator issueGenerator;
 
@@ -57,7 +63,7 @@ class IssueController {
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
                 .setWorkflowId(workflowId)
-                .setMemo(Map.of(MEMO_ISSUE_TITLE, issue.title()))
+                .setMemo(Map.of(MEMO_ISSUE_TITLE, issue.title(), MEMO_ISSUE_DESCRIPTION, issue.description()))
                 .build();
         var workflow = workflowClient.newWorkflowStub(IssueTriageWorkflow.class, options);
 
@@ -108,8 +114,8 @@ class IssueController {
             var triage = running
                     ? stub.query("getStatus", TriageStatus.class)
                     : stub.getResult(TriageStatus.class);
-            return new IssueView(workflowId, triage.issueTitle(), triage.currentStep(),
-                    triage.assignedOwner(), triage.receivedAt());
+            return new IssueView(workflowId, triage.issueTitle(), issueDescriptionFromMemo(execution),
+                    triage.currentStep(), triage.assignedOwner(), triage.receivedAt());
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
             // whole endpoint: keep the dashboard usable by returning a neutral placeholder view.
@@ -123,13 +129,13 @@ class IssueController {
 
     /** Neutral placeholder for a running or completed execution whose status is not resolvable yet. */
     private IssueView neutralView(WorkflowExecutionMetadata execution, String workflowId) {
-        return new IssueView(workflowId, issueTitleFromMemo(execution),
+        return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
                 TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime());
     }
 
     /** View for a terminal non-completed execution: a triage that ended in failure. */
     private IssueView failedView(WorkflowExecutionMetadata execution, String workflowId) {
-        return new IssueView(workflowId, issueTitleFromMemo(execution),
+        return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
                 TriageStatus.Step.FAILED, null, execution.getStartTime());
     }
 
@@ -142,6 +148,14 @@ class IssueController {
         }
     }
 
+    private String issueDescriptionFromMemo(WorkflowExecutionMetadata execution) {
+        try {
+            return execution.getMemo(MEMO_ISSUE_DESCRIPTION, String.class, String.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /** Response of {@code POST /api/v1/issues/generate}. */
     record GenerateResponse(String workflowId, Issue issue) {
     }
@@ -150,6 +164,7 @@ class IssueController {
     record IssueView(
             String workflowId,
             String issueTitle,
+            String issueDescription,
             TriageStatus.Step currentStep,
             String assignedOwner,
             Instant receivedAt
