@@ -7,18 +7,11 @@ type: project
 # Roster specialties are mutually disjoint
 
 In the issue-triage roster (`worker/src/main/resources/skills/issue-triage/SKILL.md`,
-see [[skills-tool-owner-roster]]) each owner's specialties are mutually
-disjoint, so any problem area identifies exactly one owner with no ambiguity:
-
-- alice — backend, APIs, relational databases
-- bob — infrastructure, CI/CD, networking
-- carol — security, cryptography
-- dave — frontend, accessibility, UI
-- erin — analytics, machine learning
-
-alice owns the full backend/API/relational-database domain; erin's specialties
-carry no data-storage or database wording, so a backend or database issue maps
-unambiguously to alice.
+see [[skills-tool-owner-roster]]) each owner's specialties are mutually disjoint,
+so any problem area identifies exactly one owner with no ambiguity. In
+particular alice owns the whole backend/API/relational-database domain and
+erin's specialties carry no data-storage or database wording, so a backend or
+database issue maps unambiguously to alice.
 
 **Why:** the demo assigns issues to a single best owner, so overlapping
 specialties would make the "correct" owner ambiguous and blur the
