@@ -140,7 +140,7 @@
 
         async refresh() {
           try {
-            const res = await fetch("/api/issues");
+            const res = await fetch("/api/v1/issues");
             if (!res.ok) {
               throw new Error("unexpected status " + res.status);
             }
@@ -156,7 +156,7 @@
         async generate() {
           this.generating = true;
           try {
-            const res = await fetch("/api/issues/generate", { method: "POST" });
+            const res = await fetch("/api/v1/issues/generate", { method: "POST" });
             if (!res.ok) {
               throw new Error("unexpected status " + res.status);
             }

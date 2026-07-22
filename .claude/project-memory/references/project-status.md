@@ -16,8 +16,8 @@ Implemented and committed:
   `if (true) { return "alice"; }` bug in `selectOwner`.
 - Owner-selection roster and rules loaded via `SkillsTool` from a single
   `SKILL.md` (see [[skills-tool-owner-roster]]).
-- Backend REST API (`POST /api/bugs/generate`, `GET /api/bugs`) and the
-  Alpine.js dashboard, served through the Caddy gateway.
+- Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
+  the Alpine.js dashboard, served through the Caddy gateway.
 - Temporal Web UI proxied at `/temporal`.
 - Replay tooling (`SelectOwnerHistoryExtractor`) and a committed history
   fixture (`worker/src/test/resources/history/select-owner-failure.json`).

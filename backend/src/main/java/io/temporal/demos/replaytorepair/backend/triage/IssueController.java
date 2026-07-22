@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  * reads their state through the Visibility API, Queries and Results. There is no database.
  */
 @RestController
-@RequestMapping(path = "/api/issues", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/api/v1/issues", produces = MediaType.APPLICATION_JSON_VALUE)
 class IssueController {
     private static final Logger LOGGER = LoggerFactory.getLogger(IssueController.class);
 
@@ -148,7 +148,7 @@ class IssueController {
         }
     }
 
-    /** Response of {@code POST /api/issues/generate}. */
+    /** Response of {@code POST /api/v1/issues/generate}. */
     record GenerateResponse(String workflowId, Issue issue) {
     }
 
