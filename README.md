@@ -100,6 +100,8 @@ The end-to-end narrative the tooling drives (target flow):
 8. Submit new issues under real conditions → verify a correct distribution of
    assignments.
 
+![Debugging the workflow](debug.png)
+
 ### Capturing the event history
 
 With the app running and at least one issue triaged, the quickest route is:
