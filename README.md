@@ -7,6 +7,8 @@ ordinary system can offer: take the exact history of a failure that happened in
 stepping through the real execution in a debugger with the very payload that
 triggered the bug.
 
+![App homepage](app.png)
+
 This is a conference/workshop demo built on that capability. It captures the
 event history of a production failure and replays that exact Workflow Execution
 on a local dev machine — no guessing, no synthetic data — so you can step

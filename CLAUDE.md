@@ -1,4 +1,4 @@
-# replay-to-repair
+# Replay-to-Repair
 
 A Temporal demo showing how to debug production failures by replaying a real
 event history: extract the exact Activity input, reproduce the bug in a JUnit
