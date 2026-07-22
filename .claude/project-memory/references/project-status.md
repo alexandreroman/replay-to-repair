@@ -11,14 +11,17 @@ the working tree is clean and both Maven modules build green.
 
 Implemented and committed:
 
-- `IssueTriageWorkflow` + `TriageActivities` (`loadProfiles` local,
-  `selectOwner`/`notifyAssignment` regular), with the intentional
-  `if (true) { return "alice"; }` bug in `selectOwner`.
+- `IssueTriageWorkflow` + `TriageActivities` (`selectOwner`/`notifyAssignment`
+  regular). Owner selection is delegated to a Temporal-agnostic `OwnerSelector`
+  component that returns `Optional<String>` and holds the intentional
+  `if (true) { return Optional.of("alice"); }` bug; `TriageActivitiesImpl`
+  raises the non-retryable `NoSuitableOwner` failure when the result is empty.
 - Owner-selection roster and rules loaded via `SkillsTool` from a single
   `SKILL.md` (see [[skills-tool-owner-roster]]). The skill returns the `none`
-  token when no owner fits; `selectOwner` raises a non-retryable
-  `NoSuitableOwner` failure that terminates the workflow, and the activity
-  retry policy is bounded (see [[demo-design-constraints]]).
+  token when no owner fits; `OwnerSelector` maps it to an empty `Optional` and
+  `TriageActivitiesImpl` raises a non-retryable `NoSuitableOwner` failure that
+  terminates the workflow, and the activity retry policy is bounded (see
+  [[demo-design-constraints]]).
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
@@ -38,10 +41,13 @@ Implemented and committed:
 - README with the full demo narrative, and ECS structured logging across all
   processes (see [[ecs-logging-all-processes]]).
 
-`make test` stays green with the intentional bug committed: the demo's
-`IssueTriageWorkflowReplayTest` replays the workflow and guards determinism
-without exercising the buggy Activity, so the committed `if (true)`
-short-circuit never fails it.
+`make test` stays green with the intentional bug committed. `OwnerSelectorTest`
+(a `@SpringBootTest` exercising the real `OwnerSelector` bean with the injected
+`ChatClient`) and `IssueTriageWorkflowTest` (a `@SpringBootTest` running the
+workflow on the Temporal test server) exercise the short-circuit and assert
+that `alice` is selected, so they pass while the bug is present;
+`IssueTriageWorkflowReplayTest` replays the committed history and guards workflow
+determinism. All stay green with the committed short-circuit.
 
 No implementation work is outstanding.
 

@@ -42,10 +42,10 @@ Rules for the reply:
 
 ## Owners
 
-| Owner | Specialties                        | Preferences                                      |
-|-------|------------------------------------|--------------------------------------------------|
-| alice | backend, APIs, databases           | REST design, service integration, performance    |
-| bob   | infrastructure, CI/CD, networking  | build pipelines, deployments, observability      |
-| carol | security, cryptography             | authentication, vulnerability triage, hardening  |
-| dave  | frontend, accessibility, UI        | design systems, responsive layouts, usability    |
-| erin  | data, analytics, machine learning  | data pipelines, reporting, experimentation       |
+| Owner | Specialties                         | Preferences                                      |
+|-------|-------------------------------------|--------------------------------------------------|
+| alice | backend, APIs, relational databases | REST design, service integration, query tuning   |
+| bob   | infrastructure, CI/CD, networking   | build pipelines, deployments, observability      |
+| carol | security, cryptography              | authentication, vulnerability triage, hardening  |
+| dave  | frontend, accessibility, UI         | design systems, responsive layouts, usability    |
+| erin  | analytics, machine learning         | dashboards, model training, experimentation      |

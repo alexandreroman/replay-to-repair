@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import io.temporal.api.enums.v1.WorkflowExecutionStatus;
@@ -21,16 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST API for the triage dashboard. Uses Temporal purely as a client: it starts workflows and
- * reads their state through the Visibility API, Queries and Results. There is no database.
+ * REST API for the triage dashboard. Uses Temporal purely as a client: it starts workflows, reads
+ * their state through Queries and Results, and lists executions filtered by workflow type on the
+ * server. There is no database.
  */
 @RestController
 @RequestMapping(path = "/api/v1/issues", produces = MediaType.APPLICATION_JSON_VALUE)
 class IssueController {
     private static final Logger LOGGER = LoggerFactory.getLogger(IssueController.class);
-
-    /** Visibility query used to discover every triage execution, open or closed. */
-    private static final String LIST_QUERY = "WorkflowType='" + IssueTriageWorkflow.WORKFLOW_TYPE + "'";
 
     /**
      * Memo key carrying the issue title. Stored at start time so the dashboard can still label a
@@ -38,37 +35,12 @@ class IssueController {
      */
     private static final String MEMO_ISSUE_TITLE = "issueTitle";
 
-    /** Small static, fictional dataset covering distinct areas: backend, security, infra, frontend. */
-    private static final List<Issue> ISSUES = List.of(
-            new Issue("checkout-500",
-                    "Checkout endpoint returns HTTP 500 under load",
-                    "The checkout API intermittently fails with HTTP 500 once concurrent requests "
-                            + "exceed a few hundred per second."),
-            new Issue("login-sqli",
-                    "Login form vulnerable to SQL injection",
-                    "The login form concatenates the username directly into the SQL query, allowing "
-                            + "injection through crafted input."),
-            new Issue("pods-oomkilled",
-                    "Kubernetes pods OOMKilled after deploy",
-                    "Application pods are OOMKilled minutes after each deploy because the memory "
-                            + "limit is set below the real heap footprint."),
-            new Issue("submit-misaligned",
-                    "Submit button misaligned on mobile Safari",
-                    "On mobile Safari the submit button overflows its container and overlaps the "
-                            + "footer, making it hard to tap."),
-            new Issue("jwt-logout",
-                    "JWT tokens not invalidated on logout",
-                    "Logging out does not revoke the issued JWT, so a stolen token keeps working "
-                            + "until it naturally expires."),
-            new Issue("tls-renewal",
-                    "TLS certificate renewal fails in staging",
-                    "The automated TLS certificate renewal job fails in staging, leaving the "
-                            + "environment on an expired certificate."));
-
     private final WorkflowClient workflowClient;
+    private final IssueGenerator issueGenerator;
 
-    IssueController(WorkflowClient workflowClient) {
+    IssueController(WorkflowClient workflowClient, IssueGenerator issueGenerator) {
         this.workflowClient = workflowClient;
+        this.issueGenerator = issueGenerator;
     }
 
     /**
@@ -77,8 +49,10 @@ class IssueController {
      */
     @PostMapping(path = "/generate")
     GenerateResponse generate() {
-        var issue = ISSUES.get(ThreadLocalRandom.current().nextInt(ISSUES.size()));
-        var workflowId = "issue-triage-" + issue.id() + "-" + UUID.randomUUID();
+        var issue = issueGenerator.next();
+        // Short random suffix: unique-enough to avoid id clashes across demo runs while staying readable.
+        var suffix = UUID.randomUUID().toString().substring(0, 6);
+        var workflowId = "issue-triage-" + issue.id() + "-" + suffix;
 
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
@@ -105,7 +79,9 @@ class IssueController {
      */
     @GetMapping
     List<IssueView> list() {
-        try (Stream<WorkflowExecutionMetadata> executions = workflowClient.listExecutions(LIST_QUERY)) {
+        // Temporal filters by workflow type server-side via the default WorkflowType search attribute.
+        try (Stream<WorkflowExecutionMetadata> executions =
+                workflowClient.listExecutions("WorkflowType='" + IssueTriageWorkflow.WORKFLOW_TYPE + "'")) {
             return executions
                     .map(this::resolve)
                     .toList();
