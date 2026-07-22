@@ -20,16 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST API for the triage dashboard. Uses Temporal purely as a client: it starts workflows and
- * reads their state through the Visibility API, Queries and Results. There is no database.
+ * REST API for the triage dashboard. Uses Temporal purely as a client: it starts workflows, reads
+ * their state through Queries and Results, and lists executions filtered by workflow type on the
+ * server. There is no database.
  */
 @RestController
 @RequestMapping(path = "/api/v1/issues", produces = MediaType.APPLICATION_JSON_VALUE)
 class IssueController {
     private static final Logger LOGGER = LoggerFactory.getLogger(IssueController.class);
-
-    /** Visibility query used to discover every triage execution, open or closed. */
-    private static final String LIST_QUERY = "WorkflowType='" + IssueTriageWorkflow.WORKFLOW_TYPE + "'";
 
     /**
      * Memo key carrying the issue title. Stored at start time so the dashboard can still label a
@@ -81,7 +79,9 @@ class IssueController {
      */
     @GetMapping
     List<IssueView> list() {
-        try (Stream<WorkflowExecutionMetadata> executions = workflowClient.listExecutions(LIST_QUERY)) {
+        // Temporal filters by workflow type server-side via the default WorkflowType search attribute.
+        try (Stream<WorkflowExecutionMetadata> executions =
+                workflowClient.listExecutions("WorkflowType='" + IssueTriageWorkflow.WORKFLOW_TYPE + "'")) {
             return executions
                     .map(this::resolve)
                     .toList();
