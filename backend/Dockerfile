@@ -29,4 +29,4 @@ COPY --from=extract --chown=app:app /build/extracted/snapshot-dependencies/ ./
 COPY --from=extract --chown=app:app /build/extracted/application/ ./
 USER app:app
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "application.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
