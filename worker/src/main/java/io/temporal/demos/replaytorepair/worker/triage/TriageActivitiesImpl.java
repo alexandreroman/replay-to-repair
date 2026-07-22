@@ -1,5 +1,7 @@
 package io.temporal.demos.replaytorepair.worker.triage;
 
+import java.time.Duration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -11,6 +13,7 @@ import io.temporal.spring.boot.ActivityImpl;
 @ActivityImpl(taskQueues = IssueTriageWorkflow.TASK_QUEUE)
 public class TriageActivitiesImpl implements TriageActivities {
     private static final Logger LOGGER = LoggerFactory.getLogger(TriageActivitiesImpl.class);
+    private static final Duration NOTIFY_DELAY = Duration.ofSeconds(2);
 
     private final ChatClient chatClient;
 
@@ -44,6 +47,16 @@ public class TriageActivitiesImpl implements TriageActivities {
 
     @Override
     public void notifyAssignment(Issue issue, String owner) {
+        // Simulate work so the NOTIFYING step stays visible in the dashboard while the frontend
+        // polls. Blocking is fine here: this is Activity code, not the Workflow, so a real
+        // Thread.sleep is correct (never use it in workflow code).
+        try {
+            Thread.sleep(NOTIFY_DELAY);
+        } catch (InterruptedException e) {
+            // Restore the interrupt flag and fail so Temporal can retry the activity.
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while notifying issue assignment", e);
+        }
         // No external notification in the demo: logging is enough to show the step ran.
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
