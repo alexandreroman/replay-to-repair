@@ -4,7 +4,8 @@
 # during the live demo.
 services:
   # Temporal dev server — local development ONLY, never production.
-  # Single process with a built-in database and Web UI (http://localhost:8233).
+  # Single process with a built-in database and Web UI. The UI is served through
+  # the gateway at /temporal (http://localhost:8080/temporal), not a direct port.
   temporal:
     image: temporalio/temporal:latest
     command:
@@ -12,9 +13,10 @@ services:
       - start-dev
       - --ip
       - 0.0.0.0
+      - --ui-public-path
+      - /temporal
     ports:
       - "${TEMPORAL_GRPC_PORT:-7233}:7233"  # gRPC endpoint for workers and clients
-      - "${TEMPORAL_UI_PORT:-8233}:8233"    # Web UI — http://localhost:8233
     healthcheck:
       test: ["CMD-SHELL", "temporal operator cluster health"]
       interval: 10s

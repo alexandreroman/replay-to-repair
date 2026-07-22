@@ -46,6 +46,10 @@ GATEWAY_HOST_MAPPING ?= host.docker.internal:host-gateway
 endif
 DEV_BACKEND_PORT ?= 8081
 
+# Port for the URLs printed after startup. Conditional so a value imported from
+# .env (above) wins; this is only the fallback for a plain checkout.
+GATEWAY_PORT ?= 8080
+
 # Make the gateway host mapping visible to $(COMPOSE) in every target.
 export GATEWAY_HOST_MAPPING
 
@@ -60,6 +64,16 @@ infra-up: ## Start Temporal + gateway in containers
 infra-down: ## Stop Temporal + gateway
 	$(COMPOSE) stop temporal gateway
 
+# Print the demo's useful URLs. The gateway serves the dashboard and proxies
+# /api/* to the backend and /temporal to the Temporal Web UI.
+define show_urls
+	@echo ""
+	@echo "The app is up."
+	@echo "Open:"
+	@echo "  Dashboard         http://localhost:$(GATEWAY_PORT)"
+	@echo "  Temporal Web UI   http://localhost:$(GATEWAY_PORT)/temporal"
+endef
+
 ##@ Run
 
 # The worker always runs locally (never containerized) so it can be rebuilt and
@@ -69,6 +83,7 @@ infra-down: ## Stop Temporal + gateway
 
 .PHONY: dev
 dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
+	$(show_urls)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd backend && PORT=$(DEV_BACKEND_PORT) ./mvnw -q spring-boot:run; kill 0 ) & \
 		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
@@ -77,6 +92,7 @@ dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 .PHONY: app-up
 app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reload)
 	$(COMPOSE) up -d --build
+	$(show_urls)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
@@ -90,15 +106,16 @@ app-down: ## Stop and remove the containers
 # Casper workspace setup hook: give each parallel workspace (Git worktree) its
 # own host ports so several worktrees can run the demo at once without
 # colliding. Runs once at workspace creation. No-op in a plain checkout, where
-# CASPER_PORT is unset and the compose/Makefile defaults (8080/7233/8233/8081)
+# CASPER_PORT is unset and the compose/Makefile defaults (8080/7233/8081)
 # apply unchanged.
 #
 # Ports are derived from the Casper-injected base CASPER_PORT (Casper reserves
 # CASPER_PORT..CASPER_PORT+10 for us):
 #   +0  gateway (browser entry point)
 #   +1  Temporal gRPC (local worker + local backend connect here)
-#   +2  Temporal Web UI
-#   +3  local backend in dev mode
+#   +2  local backend in dev mode
+# The Temporal Web UI needs no port of its own: it rides the gateway port (+0)
+# at /temporal.
 # All variables are $$-escaped so the shell — not Make — expands them.
 .PHONY: worktree-init
 worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_PORT)
@@ -106,21 +123,19 @@ worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_P
 		env_file=".env"; \
 		gateway_port=$$CASPER_PORT; \
 		temporal_grpc_port=$$((CASPER_PORT + 1)); \
-		temporal_ui_port=$$((CASPER_PORT + 2)); \
-		dev_backend_port=$$((CASPER_PORT + 3)); \
+		dev_backend_port=$$((CASPER_PORT + 2)); \
 		if [ -f "$$env_file" ]; then \
-			grep -vE '^(GATEWAY_PORT|TEMPORAL_GRPC_PORT|TEMPORAL_UI_PORT|DEV_BACKEND_PORT|TEMPORAL_ADDRESS)=' "$$env_file" > "$$env_file.casper.tmp" || true; \
+			grep -vE '^(GATEWAY_PORT|TEMPORAL_GRPC_PORT|DEV_BACKEND_PORT|TEMPORAL_ADDRESS)=' "$$env_file" > "$$env_file.casper.tmp" || true; \
 			mv "$$env_file.casper.tmp" "$$env_file"; \
 		fi; \
 		{ \
 			echo "# --- Casper workspace port remap (generated from base $$CASPER_PORT) ---"; \
 			echo "GATEWAY_PORT=$$gateway_port"; \
 			echo "TEMPORAL_GRPC_PORT=$$temporal_grpc_port"; \
-			echo "TEMPORAL_UI_PORT=$$temporal_ui_port"; \
 			echo "DEV_BACKEND_PORT=$$dev_backend_port"; \
 			echo "TEMPORAL_ADDRESS=localhost:$$temporal_grpc_port"; \
 		} >> "$$env_file"; \
-		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port temporal-ui=$$temporal_ui_port backend-dev=$$dev_backend_port"
+		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port"
 
 ##@ Quality
 
