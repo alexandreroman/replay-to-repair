@@ -131,6 +131,13 @@ For the demo, run the test from your IDE debugger with breakpoints in the
 Workflow to step through the real execution. Replay guards Workflow determinism;
 the Activity bug is found by stepping through it, not by the test failing.
 
+When debugging in the IDE, set `TEMPORAL_DEBUG=true` (an environment variable,
+or `-DTEMPORAL_DEBUG=true` in the run configuration's VM options) to turn off
+Temporal's deadlock detector. Otherwise pausing on a breakpoint for more than a
+second trips a `PotentialDeadlockException` (TMPRL1101), because the SDK cannot
+tell a debugger pause from a genuine block. Leave it unset for `make test` and
+CI so real deadlock detection stays active.
+
 ## Usage
 
 ```bash
