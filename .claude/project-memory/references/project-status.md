@@ -6,25 +6,34 @@ type: project
 
 # Project status
 
-As of 2026-07-21, all `BRIEF.md` deliverables are implemented and both Maven
-modules build green. Done: the `IssueTriageWorkflow` + `TriageActivities`
-(`loadProfiles` local, `selectOwner`/`notifyAssignment` regular) with the
-injected bug in `selectOwner` (`if (true) { return "alice"; }`), the owner
-dataset (alice/backend, bob/infrastructure, carol/security, dave/frontend,
-erin/data), the backend REST API (`POST /api/bugs/generate`, `GET /api/bugs`
-with graceful open/closed resolution), the Alpine.js dashboard, the
-`SelectOwnerHistoryExtractor` utility, a genuine committed history fixture
-(`worker/src/test/resources/history/select-owner-failure.json`), and the
-`@Disabled` `SelectOwnerReplayTest` (RED with the bug, GREEN once the debug
-line is removed). The two demo tests are `@Disabled` so `make test` stays green
-while the bug is committed; run them from the IDE for the demo.
+As of 2026-07-22, the demo is feature-complete and every change is committed;
+the working tree is clean and both Maven modules build green.
 
-Not yet done: README demo-narrative tooling/scripts (steps in `BRIEF.md`), and
-committing the generated code.
+Implemented and committed:
+
+- `IssueTriageWorkflow` + `TriageActivities` (`loadProfiles` local,
+  `selectOwner`/`notifyAssignment` regular), with the intentional
+  `if (true) { return "alice"; }` bug in `selectOwner`.
+- Owner-selection roster and rules loaded via `SkillsTool` from a single
+  `SKILL.md` (see [[skills-tool-owner-roster]]).
+- Backend REST API (`POST /api/bugs/generate`, `GET /api/bugs`) and the
+  Alpine.js dashboard, served through the Caddy gateway.
+- Temporal Web UI proxied at `/temporal`.
+- Replay tooling (`SelectOwnerHistoryExtractor`) and a committed history
+  fixture (`worker/src/test/resources/history/select-owner-failure.json`).
+- README with the full demo narrative, and ECS structured logging across all
+  processes (see [[ecs-logging-all-processes]]).
+
+Two `@Disabled` tests stay disabled by design so `make test` is green while the
+bug is committed: `SelectOwnerReplayTest` (the replay demo, RED with the bug and
+GREEN once the debug line is removed) and `GenerateHistoryFixtureTest` (the
+fixture generator). Run them from the IDE for the demo.
+
+No implementation work is outstanding.
 
 **Why:** the demo narrative depends on these pieces; tracking progress here
 keeps the status out of the README (which describes the target end state).
 
-**How to apply:** update this note as milestones land; treat it as the single
+**How to apply:** update this note as milestones land — treat it as the single
 place recording what is done versus what remains, and update the date when the
 status changes.

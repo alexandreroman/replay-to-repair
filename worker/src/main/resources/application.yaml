@@ -25,5 +25,8 @@ triage:
   skills:
     location: classpath:/skills
 
-# The worker runs as a local process during the demo; keep console logs
-# human-readable (no structured/ECS format) so restarts are easy to follow.
+# Emit ECS-structured console logs so the worker matches the backend.
+logging:
+  structured:
+    format:
+      console: ecs
