@@ -22,13 +22,13 @@ import org.springframework.core.io.Resource;
 @Configuration(proxyBeanMethods = false)
 class ChatClientConfiguration {
     @Bean
-    ToolCallback triageSkillsTool(
+    ToolCallback skills(
             @Value("${triage.skills.location:classpath:/skills}") List<Resource> skillLocations) {
         return SkillsTool.builder().addSkillsResources(skillLocations).build();
     }
 
     @Bean
-    ChatClient chatClient(ChatClient.Builder builder, ToolCallback triageSkillsTool) {
-        return builder.defaultTools(triageSkillsTool).build();
+    ChatClient chatClient(ChatClient.Builder builder, ToolCallback skills) {
+        return builder.defaultTools(skills).build();
     }
 }

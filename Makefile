@@ -50,6 +50,10 @@ DEV_BACKEND_PORT ?= 8081
 # .env (above) wins; this is only the fallback for a plain checkout.
 GATEWAY_PORT ?= 8080
 
+# Event-history fixture that IssueTriageWorkflowReplayTest reads and that
+# `make capture-history` writes.
+REPLAY_FIXTURE := worker/src/test/resources/history/issue-triage.json
+
 # Make the gateway host mapping visible to $(COMPOSE) in every target.
 export GATEWAY_HOST_MAPPING
 
@@ -136,6 +140,29 @@ worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_P
 			echo "TEMPORAL_ADDRESS=localhost:$$temporal_grpc_port"; \
 		} >> "$$env_file"; \
 		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port"
+
+##@ Replay
+
+# Capture the most recent IssueTriageWorkflow's event history into the replay
+# fixture that IssueTriageWorkflowReplayTest reads. Needs the Temporal CLI and
+# jq, with Temporal reachable. The Temporal CLI honors TEMPORAL_ADDRESS (set in
+# a Casper worktree; defaults to localhost:7233 in a plain checkout). The list
+# defaults to newest-first (StartTime descending), so --limit 1 with .[0] yields
+# the most recent execution; the demo's visibility store rejects ORDER BY.
+.PHONY: capture-history
+capture-history: ## Capture the last triage workflow's event history into the replay fixture
+	@command -v temporal >/dev/null 2>&1 || { echo "temporal CLI not found (see https://docs.temporal.io/cli)"; exit 1; }
+	@command -v jq >/dev/null 2>&1 || { echo "jq not found (install jq)"; exit 1; }
+	@wid=$$(temporal workflow list \
+			--query 'WorkflowType = "IssueTriageWorkflow"' \
+			--limit 1 --output json | jq -r '.[0].execution.workflowId // empty'); \
+		if [ -z "$$wid" ]; then \
+			echo "No IssueTriageWorkflow execution found — trigger one from the dashboard first."; \
+			exit 1; \
+		fi; \
+		echo "Capturing event history of workflow $$wid"; \
+		temporal workflow show --workflow-id "$$wid" --output json > $(REPLAY_FIXTURE); \
+		echo "Wrote $(REPLAY_FIXTURE)"
 
 ##@ Quality
 

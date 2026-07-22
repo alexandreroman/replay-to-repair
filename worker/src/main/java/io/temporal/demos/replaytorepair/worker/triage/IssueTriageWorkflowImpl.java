@@ -17,12 +17,19 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     private static final Logger LOGGER = Workflow.getLogger(IssueTriageWorkflowImpl.class);
 
     // Owner selection calls the LLM (network I/O), so it stays a regular activity with retries.
+    // Transient failures (LLM/network) and malformed replies retry with capped exponential backoff up
+    // to 3 attempts, while the NoSuitableOwner failure is non-retryable and terminates the workflow in
+    // error immediately.
     private final TriageActivities activities = Workflow.newActivityStub(
             TriageActivities.class,
             ActivityOptions.newBuilder()
                     .setStartToCloseTimeout(Duration.ofSeconds(30))
                     .setRetryOptions(RetryOptions.newBuilder()
+                            .setInitialInterval(Duration.ofSeconds(1))
+                            .setBackoffCoefficient(2.0)
+                            .setMaximumInterval(Duration.ofSeconds(10))
                             .setMaximumAttempts(3)
+                            .setDoNotRetry("NoSuitableOwner")
                             .build())
                     .build());
 
@@ -34,23 +41,23 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         // Never use Instant.now() inside workflow code: derive the timestamp from the deterministic
         // workflow clock and keep it fixed for the whole execution.
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.ISSUE_RECEIVED, null, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.ISSUE_RECEIVED, null);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
                 .log("triage.issue.received");
 
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.AI_ANALYSIS, null);
         var owner = activities.selectOwner(issue);
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.OWNER_SELECTED, owner);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
                 .log("triage.owner.selected");
 
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.NOTIFYING, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.NOTIFYING, owner);
         activities.notifyAssignment(issue, owner);
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.DONE, owner);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
@@ -61,5 +68,9 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     @Override
     public TriageStatus getStatus() {
         return currentStatus;
+    }
+
+    private static TriageStatus statusAt(Issue issue, Instant receivedAt, Step step, String owner) {
+        return new TriageStatus(issue.id(), issue.title(), step, owner, receivedAt);
     }
 }

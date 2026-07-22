@@ -15,19 +15,33 @@ Implemented and committed:
   `selectOwner`/`notifyAssignment` regular), with the intentional
   `if (true) { return "alice"; }` bug in `selectOwner`.
 - Owner-selection roster and rules loaded via `SkillsTool` from a single
-  `SKILL.md` (see [[skills-tool-owner-roster]]).
+  `SKILL.md` (see [[skills-tool-owner-roster]]). The skill returns the `none`
+  token when no owner fits; `selectOwner` raises a non-retryable
+  `NoSuitableOwner` failure that terminates the workflow, and the activity
+  retry policy is bounded (see [[demo-design-constraints]]).
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
-  the Alpine.js dashboard, served through the Caddy gateway.
+  the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
+  a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
+  `NoSuitableOwner` failure), rather than the neutral "received" placeholder.
 - Temporal Web UI proxied at `/temporal`.
-- Replay tooling (`SelectOwnerHistoryExtractor`) and a committed history
-  fixture (`worker/src/test/resources/history/select-owner-failure.json`).
+- A committed event-history fixture
+  (`worker/src/test/resources/history/issue-triage.json`) and a single
+  `IssueTriageWorkflowReplayTest` that replays it against the workflow with
+  `WorkflowReplayer`. The test runs in `make test` (it guards workflow
+  determinism); for the demo it also runs from the IDE with breakpoints. If the
+  workflow changes incompatibly with the committed history, the replay goes red
+  until the fixture is refreshed. The `make capture-history` target refreshes the
+  fixture from the latest `IssueTriageWorkflow` (Web UI Download and
+  `temporal workflow show --output json` are the manual routes). The demo's
+  Temporal visibility store rejects `ORDER BY` in list queries, so the target
+  relies on the default newest-first ordering with `--limit 1`.
 - README with the full demo narrative, and ECS structured logging across all
   processes (see [[ecs-logging-all-processes]]).
 
-Two `@Disabled` tests stay disabled by design so `make test` is green while the
-bug is committed: `SelectOwnerReplayTest` (the replay demo, RED with the bug and
-GREEN once the debug line is removed) and `GenerateHistoryFixtureTest` (the
-fixture generator). Run them from the IDE for the demo.
+`make test` stays green with the intentional bug committed: the demo's
+`IssueTriageWorkflowReplayTest` replays the workflow and guards determinism
+without exercising the buggy Activity, so the committed `if (true)`
+short-circuit never fails it.
 
 No implementation work is outstanding.
 

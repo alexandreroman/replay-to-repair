@@ -18,12 +18,16 @@ public record TriageStatus(
         Step currentStep,
         String assignedOwner,
         Instant receivedAt) {
-
     public enum Step {
         ISSUE_RECEIVED,
         AI_ANALYSIS,
         OWNER_SELECTED,
         NOTIFYING,
-        DONE
+        DONE,
+        // FAILED means triage ended in an error (the workflow failed, e.g. no
+        // suitable owner). The worker never sets it (the workflow fails via a
+        // thrown non-retryable failure); it exists so the backend can label
+        // failed executions and the two copies stay identical.
+        FAILED
     }
 }

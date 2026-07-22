@@ -114,14 +114,26 @@ class IssueController {
 
     private IssueView resolve(WorkflowExecutionMetadata execution) {
         var workflowId = execution.getExecution().getWorkflowId();
-        var running = execution.getStatus() == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_RUNNING;
+        var status = execution.getStatus();
+
+        // A terminal-but-not-completed execution (FAILED / TERMINATED / TIMED_OUT / CANCELED /
+        // CONTINUED_AS_NEW) is a failed triage: it has no result to read and no live worker to
+        // query. Surface it as FAILED, distinct from an execution that is simply not resolved yet.
+        var running = status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_RUNNING;
+        var completed = status == WorkflowExecutionStatus.WORKFLOW_EXECUTION_STATUS_COMPLETED;
+        if (!running && !completed) {
+            return failedView(execution, workflowId);
+        }
+
+        // Running executions expose their state through a live Query; completed ones through their
+        // persisted result (readable even with no worker running).
         var stub = workflowClient.newUntypedWorkflowStub(workflowId);
         try {
-            var status = running
+            var triage = running
                     ? stub.query("getStatus", TriageStatus.class)
                     : stub.getResult(TriageStatus.class);
-            return new IssueView(workflowId, status.issueTitle(), status.currentStep(),
-                    status.assignedOwner(), status.receivedAt());
+            return new IssueView(workflowId, triage.issueTitle(), triage.currentStep(),
+                    triage.assignedOwner(), triage.receivedAt());
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
             // whole endpoint: keep the dashboard usable by returning a neutral placeholder view.
@@ -129,14 +141,20 @@ class IssueController {
                     .addKeyValue("workflowId", workflowId)
                     .setCause(e)
                     .log("triage.status.unresolved");
-            return neutralView(execution);
+            return neutralView(execution, workflowId);
         }
     }
 
-    private IssueView neutralView(WorkflowExecutionMetadata execution) {
-        var workflowId = execution.getExecution().getWorkflowId();
+    /** Neutral placeholder for a running or completed execution whose status is not resolvable yet. */
+    private IssueView neutralView(WorkflowExecutionMetadata execution, String workflowId) {
         return new IssueView(workflowId, issueTitleFromMemo(execution),
                 TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime());
+    }
+
+    /** View for a terminal non-completed execution: a triage that ended in failure. */
+    private IssueView failedView(WorkflowExecutionMetadata execution, String workflowId) {
+        return new IssueView(workflowId, issueTitleFromMemo(execution),
+                TriageStatus.Step.FAILED, null, execution.getStartTime());
     }
 
     private String issueTitleFromMemo(WorkflowExecutionMetadata execution) {
