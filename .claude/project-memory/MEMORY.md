@@ -30,3 +30,4 @@
 - [Logging conventions](references/logging-conventions.md) — SLF4J 2.x fluent API with addKeyValue context; .log() message is a dotted domain code, not a sentence; Workflow.getLogger in workflow code (replay-safe)
 - [ECS log format for all processes, always](references/ecs-logging-all-processes.md) — backend + worker emit ECS structured console logs unconditionally, including local/dev mode
 - [Owner roster in a SkillsTool skill](references/skills-tool-owner-roster.md) — roster+rules live in SKILL.md loaded via spring-ai-agent-utils SkillsTool; build() returns ToolCallback
+- [README must not mention Casper](references/readme-no-casper.md) — keep Casper out of the public README; Casper port-remap docs live in CLAUDE.md only

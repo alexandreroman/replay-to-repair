@@ -26,12 +26,27 @@ run local processes in the foreground and need `ANTHROPIC_API_KEY` in
 `.env.local` (git-ignored). In `dev`, the local backend listens on `8081` and
 the containerized gateway proxies to it via `host.containers.internal`.
 
+## Ports
+
+The Caddy gateway on `8080` is the single browser entry point:
+
+- `8080` — gateway: dashboard, `/api/*` → backend, `/temporal` → Temporal Web UI
+- `7233` — Temporal gRPC (workers and the backend connect here)
+- `8081` — local backend, `dev` mode only (the gateway proxies to it)
+
+The Temporal Web UI has no port of its own — it is served through the gateway
+at `/temporal` (`--ui-public-path` on the dev server + a `handle /temporal*`
+proxy in `gateway/Caddyfile`). In a Casper worktree these host ports are
+remapped from `CASPER_PORT` (`make worktree-init`): `+0` gateway, `+1` Temporal
+gRPC, `+2` dev backend.
+
 ## Modules
 
 - `backend` — REST API + Temporal client. Containerized.
 - `worker` — Temporal worker; runs locally so it can be restarted mid-demo.
 - `frontend` — single static HTML page, no build step.
-- `gateway` — Caddy: serves the frontend, proxies `/api/*` to the backend.
+- `gateway` — Caddy: serves the frontend, proxies `/api/*` to the backend and
+  `/temporal` to the Temporal Web UI.
 
 ## Intentional demo bug — do not "fix" it
 

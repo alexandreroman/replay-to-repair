@@ -27,7 +27,7 @@ becomes straightforward — and it ships to production faster.
 - **Anthropic API key** — the owner-selection Activity calls Claude via
   Spring AI
 - **Temporal CLI** (optional) — handy for inspecting workflows; the Web UI at
-  <http://localhost:8233> covers the demo needs
+  <http://localhost:8080/temporal> covers the demo needs
 
 ## Getting Started
 
@@ -42,7 +42,8 @@ make app-up
 open http://localhost:8080
 ```
 
-The Temporal Web UI is available at <http://localhost:8233>.
+The Temporal Web UI is available at <http://localhost:8080/temporal> — it is
+served through the gateway, not on a separate port.
 
 ### Two ways to run
 
@@ -60,20 +61,15 @@ Both serve the dashboard at <http://localhost:8080> and run the local processes
 in the foreground; press Ctrl-C to stop them, then `make app-down` to remove the
 containers. Run `make` (or `make help`) to list every target.
 
-### Casper
+### Ports
 
-Casper runs each workspace as an isolated Git worktree, so several workspaces
-can run this demo at once. Each workspace automatically gets its own host ports
-(gateway, Temporal, and backend, all derived from the injected `CASPER_PORT`)
-via the `setup` hook, which runs `make worktree-init`, so parallel workspaces
-never collide. `teardown` stops the containers when a workspace is closed. A
-plain (non-Casper) checkout keeps the default ports unchanged.
+The gateway on `8080` is the single browser entry point.
 
-| Command            | Runs         | Description                                  |
-| ------------------ | ------------ | -------------------------------------------- |
-| `casper run`       | `make app-up`| Launch the demo (backend containerized)      |
-| `casper run dev`   | `make dev`   | Local hot-reload mode (backend + worker)     |
-| `casper run test`  | `make test`  | Run the test suite for both Maven modules    |
+| Port   | Service                                                              |
+| ------ | ------------------------------------------------------------------- |
+| `8080` | Gateway — dashboard, `/api/*` → backend, `/temporal` → Temporal Web UI |
+| `7233` | Temporal gRPC (workers and the backend connect here)                |
+| `8081` | Local backend, `make dev` only (the gateway proxies to it)          |
 
 ## The demo
 
@@ -127,6 +123,7 @@ graph TD
     Browser -->|HTTP| Gateway[Caddy gateway]
     Gateway -->|static files| Frontend[Static dashboard]
     Gateway -->|/api/*| Backend[Backend REST API]
+    Gateway -->|/temporal| Temporal[(Temporal server)]
     Backend -->|start / query workflows| Temporal[(Temporal server)]
     Worker[Worker - local process] -->|poll task queue| Temporal
     Worker -->|owner selection| Claude[Anthropic Claude]
@@ -140,7 +137,7 @@ or common module — shared types are duplicated in each rather than extracted.
 | `backend`  | Spring Boot REST API; Temporal client that starts/queries flows |
 | `worker`   | Spring Boot Temporal worker; hosts the triage workflow/activity |
 | `frontend` | Static dashboard (Tailwind CDN + Alpine.js), no build step      |
-| `gateway`  | Caddy config serving the frontend and proxying `/api/*`         |
+| `gateway`  | Caddy: serves the frontend, proxies `/api/*` and `/temporal`    |
 
 ## License
 
