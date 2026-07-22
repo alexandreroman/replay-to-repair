@@ -10,5 +10,9 @@ public interface TriageActivities {
      */
     String selectOwner(Issue issue);
 
+    /**
+     * Notifies the assigned owner that the issue is theirs. This demo sends no real external notification: it logs the
+     * assignment and pauses briefly so the NOTIFYING step stays visible on the dashboard while the frontend polls.
+     */
     void notifyAssignment(Issue issue, String owner);
 }
