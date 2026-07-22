@@ -7,11 +7,11 @@ ordinary system can offer: take the exact history of a failure that happened in
 stepping through the real execution in a debugger with the very payload that
 triggered the bug.
 
-This is a conference/workshop demo built on that capability. It turns a Temporal
-event history into a permanent regression test: replay the **exact payload**
-that flowed through the system — no guessing, no synthetic data — reproduce the
-bug locally, write a test from the captured input, fix it, and redeploy under
-real conditions.
+This is a conference/workshop demo built on that capability. It captures the
+event history of a production failure and replays that exact Workflow Execution
+on a local dev machine — no guessing, no synthetic data — so you can step
+through the real run in your IDE debugger, pinpoint the bug, fix it, and
+redeploy the worker under real conditions.
 
 The scenario: an AI triage agent assigns incoming issues to developers
 ("owners") based on their specialties. In production, every recent issue lands
@@ -26,8 +26,9 @@ becomes straightforward — and it ships to production faster.
 - **Docker** or **Podman** with the Compose plugin
 - **Anthropic API key** — the owner-selection Activity calls Claude via
   Spring AI
-- **Temporal CLI** (optional) — handy for inspecting workflows; the Web UI at
-  <http://localhost:8080/temporal> covers the demo needs
+- **Temporal CLI** (optional) — one of the two documented ways to capture a
+  Workflow's event history; the Web UI at <http://localhost:8080/temporal> is
+  the other and covers the rest of the demo needs
 
 ## Getting Started
 
@@ -77,19 +78,58 @@ The end-to-end narrative the tooling drives (target flow):
 
 1. Trigger a batch of issues from the dashboard → everything lands on a single
    owner.
-2. Find the failing Workflow Execution in the Temporal Web UI and download its
-   event history as JSON.
-3. Load the history, locate the owner-selection Activity's scheduled input, and
-   decode it back into a real object.
-4. Run a JUnit test that exercises the Activity directly with that captured
-   input (set a breakpoint), asserting a different owner should have been
-   chosen → red.
-5. Remove the debug early return → fix the bug.
-6. Re-run the same test → green.
+2. Open the failing Workflow Execution in the Temporal Web UI: the
+   owner-selection Activity keeps returning the same owner.
+3. Capture that execution's event history as JSON and save it to
+   `worker/src/test/resources/history/issue-triage.json` (see
+   [Capturing the event history](#capturing-the-event-history)).
+4. Replay the Workflow from that file with the `IssueTriageWorkflowReplayTest`
+   JUnit test: set breakpoints in `IssueTriageWorkflowImpl` and step through the
+   real production execution in your IDE. Replay feeds the **recorded** Activity
+   results back in — the Activity code is not re-run — so the Workflow path is
+   reproduced deterministically, pointing you straight at the owner-selection
+   Activity.
+5. Inspect that Activity and spot the committed debug early return that
+   short-circuits the LLM call.
+6. Remove the debug early return → fix the bug.
 7. Rebuild and redeploy the worker only — the backend, gateway, and dashboard
    keep running throughout.
-8. Submit a new issue under real conditions → verify a correct distribution of
+8. Submit new issues under real conditions → verify a correct distribution of
    assignments.
+
+### Capturing the event history
+
+With the app running and at least one issue triaged, the quickest route is:
+
+```bash
+make capture-history
+```
+
+It finds the most recent `IssueTriageWorkflow` execution and writes its event
+history to `worker/src/test/resources/history/issue-triage.json` (needs the
+Temporal CLI and `jq`). Two manual routes produce the same replay-compatible
+JSON:
+
+- **Temporal Web UI** — open the Workflow Execution at
+  <http://localhost:8080/temporal>, then use **Download** on the history view to
+  export the event history as JSON.
+- **Temporal CLI** — export it straight to the fixture path:
+
+  ```bash
+  temporal workflow show \
+      --workflow-id <workflow-id> \
+      --output json \
+      > worker/src/test/resources/history/issue-triage.json
+  ```
+
+  The CLI targets the Temporal gRPC endpoint on `localhost:7233` (its default)
+  and namespace `default`.
+
+`IssueTriageWorkflowReplayTest` runs as part of `make test`. If the Workflow
+changes incompatibly with the committed history, refresh the fixture as above.
+For the demo, run the test from your IDE debugger with breakpoints in the
+Workflow to step through the real execution. Replay guards Workflow determinism;
+the Activity bug is found by stepping through it, not by the test failing.
 
 ## Usage
 

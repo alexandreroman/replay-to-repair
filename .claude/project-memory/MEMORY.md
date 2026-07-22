@@ -31,3 +31,4 @@
 - [ECS log format for all processes, always](references/ecs-logging-all-processes.md) — backend + worker emit ECS structured console logs unconditionally, including local/dev mode
 - [Owner roster in a SkillsTool skill](references/skills-tool-owner-roster.md) — roster+rules live in SKILL.md loaded via spring-ai-agent-utils SkillsTool; build() returns ToolCallback
 - [README must not mention Casper](references/readme-no-casper.md) — keep Casper out of the public README; Casper port-remap docs live in CLAUDE.md only
+- [Never print .env contents](references/never-print-env-contents.md) — never cat/echo `.env`/`.env.local`; they hold a live ANTHROPIC_API_KEY; check presence without revealing values

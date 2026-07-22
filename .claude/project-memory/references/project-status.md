@@ -22,8 +22,17 @@ Implemented and committed:
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway.
 - Temporal Web UI proxied at `/temporal`.
-- Replay tooling (`SelectOwnerHistoryExtractor`) and a committed history
-  fixture (`worker/src/test/resources/history/select-owner-failure.json`).
+- A committed event-history fixture
+  (`worker/src/test/resources/history/issue-triage.json`) and a single
+  `IssueTriageWorkflowReplayTest` that replays it against the workflow with
+  `WorkflowReplayer`. The test runs in `make test` (it guards workflow
+  determinism); for the demo it also runs from the IDE with breakpoints. If the
+  workflow changes incompatibly with the committed history, the replay goes red
+  until the fixture is refreshed. The `make capture-history` target refreshes the
+  fixture from the latest `IssueTriageWorkflow` (Web UI Download and
+  `temporal workflow show --output json` are the manual routes). The demo's
+  Temporal visibility store rejects `ORDER BY` in list queries, so the target
+  relies on the default newest-first ordering with `--limit 1`.
 - README with the full demo narrative, and ECS structured logging across all
   processes (see [[ecs-logging-all-processes]]).
 
