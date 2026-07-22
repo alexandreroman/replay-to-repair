@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | grep -q \"git commit\" && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"A git commit just landed. Review whether .claude/project-memory/references/project-status.md still reflects reality (done vs. remaining) and update its date if a milestone changed; if nothing material changed, do nothing.\"}}' || true",
+            "statusMessage": "Checking project status freshness"
+          }
+        ]
+      }
+    ]
+  }
+}
