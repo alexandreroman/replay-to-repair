@@ -52,7 +52,9 @@ class IssueController {
     @PostMapping(path = "/generate")
     GenerateResponse generate() {
         var issue = issueGenerator.next();
-        var workflowId = "issue-triage-" + issue.id() + "-" + UUID.randomUUID();
+        // Short random suffix: unique-enough to avoid id clashes across demo runs while staying readable.
+        var suffix = UUID.randomUUID().toString().substring(0, 6);
+        var workflowId = "issue-triage-" + issue.id() + "-" + suffix;
 
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
