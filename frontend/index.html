@@ -232,7 +232,7 @@
           }
           return Object.entries(counts)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+            .sort((a, b) => a.name.localeCompare(b.name));
         },
       };
     }
