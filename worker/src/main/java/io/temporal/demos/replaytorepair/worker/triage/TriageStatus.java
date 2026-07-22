@@ -23,6 +23,7 @@ public record TriageStatus(
         ISSUE_RECEIVED,
         AI_ANALYSIS,
         OWNER_SELECTED,
+        NOTIFYING,
         DONE
     }
 }

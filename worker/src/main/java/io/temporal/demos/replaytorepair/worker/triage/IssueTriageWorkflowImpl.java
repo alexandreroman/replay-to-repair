@@ -48,6 +48,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
                 .addKeyValue("owner", owner)
                 .log("triage.owner.selected");
 
+        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.NOTIFYING, owner, receivedAt);
         activities.notifyAssignment(issue, owner);
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
         LOGGER.atInfo()
