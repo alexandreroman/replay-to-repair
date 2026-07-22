@@ -9,8 +9,14 @@ type: feedback
 When calling an LLM through Spring AI's `ChatClient`, constrain the model to a
 JSON structure mapped to a Java record via `...call().entity(SomeRecord.class)`
 rather than reading a free-text `...call().content()` String and parsing it by
-hand. Spring AI's `BeanOutputConverter` derives a JSON schema from the record,
-appends the format instructions to the prompt, and parses the response.
+hand. Spring AI's `BeanOutputConverter` derives a JSON schema from the record
+and parses the response.
+
+Prefer provider-native structured output when the provider supports it: the
+`entity(Class, spec -> spec.useProviderStructuredOutput())` overload delivers the
+derived JSON schema to the provider as an API-level constraint instead of
+appending format instructions to the prompt text. The worker owner-selection
+call uses this against the Anthropic provider.
 
 Keep a validation step after parsing when the value must match a known,
 runtime-provided set (e.g. the returned owner name against the loaded

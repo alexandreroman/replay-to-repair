@@ -18,10 +18,6 @@ class OwnerSelector {
     }
 
     Optional<String> select(Issue issue) {
-        // TODO: remove, just testing
-        if (true) {
-            return Optional.of("alice");
-        }
         // Ask the LLM to pick the owner best suited to the issue, using the
         // issue-triage skill for the roster and rules, then validate the reply.
         var system = """
@@ -32,7 +28,8 @@ class OwnerSelector {
                 invent a name.
                 """;
         var user = buildUserPrompt(issue);
-        var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
+        var selection = chatClient.prompt().system(system).user(user).call()
+                .entity(OwnerSelection.class, spec -> spec.useProviderStructuredOutput());
         return resolveOwner(selection.owner());
     }
 
@@ -59,7 +56,10 @@ class OwnerSelector {
         return Optional.of(candidate);
     }
 
-    /** Structured result of the owner-selection call: constrains the model to reply with JSON, not free text. */
+    /**
+     * Structured result of the owner-selection call: the JSON schema is enforced provider-side as an
+     * API-level constraint, not via prompt instructions.
+     */
     record OwnerSelection(String owner) {
     }
 }
