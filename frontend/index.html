@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,24 +7,98 @@
   <!-- Tailwind Play CDN + Alpine.js: no build step. -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = { theme: { extend: {
+      fontFamily: { display: ['Space Grotesk', 'sans-serif'], mono: ['IBM Plex Mono', 'monospace'] },
+      colors: { violet: '#8B5CF6', lime: '#B6F35A', slateb: '#7C8FB1' },
+    }}};
+  </script>
+  <style>
+    body {
+      background:
+        radial-gradient(1200px 500px at 70% -10%, #3B2E8F55, transparent 60%),
+        radial-gradient(900px 600px at 10% 0%, #201457, transparent 55%),
+        #0C0A1B;
+    }
+    .stars { position: fixed; inset: 0; pointer-events: none;
+      background-image: radial-gradient(1px 1px at 20% 30%, #fff6, transparent), radial-gradient(1px 1px at 70% 20%, #fff5, transparent), radial-gradient(1px 1px at 40% 70%, #fff4, transparent), radial-gradient(1px 1px at 85% 60%, #fff5, transparent), radial-gradient(1px 1px at 55% 45%, #fff3, transparent); }
+    .grid { position: fixed; inset: 0; pointer-events: none;
+      background-image: linear-gradient(#ffffff0a 1px, transparent 1px), linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
+      background-size: 64px 64px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%); mask-image: linear-gradient(180deg, #000, transparent 55%); }
+    .grad { background-image: linear-gradient(100deg, #8B5CF6, #5B7CFA); }
+    /* Icons live on disk (icons/*.svg) and are tinted via currentColor through a CSS mask. */
+    .icon { display: inline-block; background-color: currentColor;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
+    .icon-bug { -webkit-mask-image: url("icons/bug.svg"); mask-image: url("icons/bug.svg"); }
+    .icon-user { -webkit-mask-image: url("icons/user.svg"); mask-image: url("icons/user.svg"); }
+    /* Continuously sweeping gradient across the title text. First and last
+       stops match so the loop is seamless. */
+    .title-gradient {
+      background-image: linear-gradient(90deg, #8B5CF6, #5B7CFA, #B6F35A, #5B7CFA, #8B5CF6);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: title-shift 6s linear infinite;
+    }
+    @keyframes title-shift { to { background-position: -200% center; } }
+    @media (prefers-reduced-motion: reduce) { .title-gradient { animation: none; } }
+    /* A newly added issue card expands open from the top and fades in, which
+       pushes the cards below it down to make room. Only fresh DOM nodes play
+       this — Alpine reuses keyed nodes across polls, so existing cards stay put. */
+    @keyframes card-in {
+      from { max-height: 0; opacity: 0; transform: translateY(-8px); }
+      60%  { opacity: 1; }
+      to   { max-height: 320px; opacity: 1; transform: translateY(0); }
+    }
+    .animate-card-in { animation: card-in 500ms ease-out; }
+    @media (prefers-reduced-motion: reduce) { .animate-card-in { animation: none; } }
+    /* Focus state for the generate button: a conic-gradient that rotates around
+       the border. The mask keeps the gradient to a 2px ring; @property makes the
+       angle animatable so it can spin. */
+    @property --btn-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    @keyframes btn-spin { to { --btn-angle: 360deg; } }
+    .grad-btn { position: relative; }
+    .grad-btn:focus-visible { outline: none; }
+    .grad-btn::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 11px;
+      padding: 3px;
+      background: conic-gradient(from var(--btn-angle), #8B5CF6, #22D3EE, #B6F35A, #22D3EE, #8B5CF6);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+              mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.55));
+      opacity: 0;
+      transition: opacity .2s ease;
+      pointer-events: none;
+    }
+    .grad-btn:hover::before,
+    .grad-btn:focus-visible::before { opacity: 1; animation: btn-spin 2.5s linear infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .grad-btn:hover::before,
+      .grad-btn:focus-visible::before { animation: none; }
+    }
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
-<body class="h-full text-slate-800">
-  <div
-    x-data="dashboard()"
-    class="mx-auto max-w-3xl px-6 py-12"
-  >
-    <header class="mb-8 flex items-start justify-between gap-4">
+<body class="h-full font-display text-neutral-200 antialiased">
+  <div class="stars"></div><div class="grid"></div>
+  <div x-data="dashboard()" class="relative mx-auto max-w-3xl px-6 py-20">
+    <header class="mb-8 flex items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-semibold tracking-tight">replay-to-repair</h1>
-        <p class="mt-1 text-sm text-slate-500">
-          AI issue-triage dashboard — event-history replay demo
-        </p>
+        <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-slateb">Event-history replay · Powered by Temporal</p>
+        <h1 class="title-gradient text-4xl font-semibold leading-none tracking-tight">replay → repair</h1>
       </div>
       <button
         @click="generate()"
         :disabled="generating"
-        class="shrink-0 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white
-               shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
+        class="grad grad-btn shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
       >
         <span x-text="generating ? 'Generating…' : 'Generate an issue'"></span>
       </button>
@@ -34,27 +108,20 @@
     <p
       x-show="!reachable"
       x-cloak
-      class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+      class="mb-6 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 font-mono text-xs text-amber-300"
     >
       Backend unreachable — retrying…
     </p>
 
     <!-- Owners summary, fully derived from the workflows returned by the API. -->
-    <section x-show="owners().length > 0" x-cloak class="mb-8">
-      <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
-        Owners
-      </h2>
-      <div class="flex flex-wrap gap-2">
+    <section x-show="owners().length > 0" x-cloak class="mb-14">
+      <h2 class="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-500">Owners</h2>
+      <div class="flex flex-wrap gap-2.5">
         <template x-for="owner in owners()" :key="owner.name">
-          <span
-            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200
-                   bg-white px-3 py-1 text-sm shadow-sm"
-          >
-            <span class="font-medium" x-text="owner.name"></span>
-            <span
-              class="rounded-full bg-slate-100 px-1.5 text-xs text-slate-500"
-              x-text="owner.count"
-            ></span>
+          <span class="inline-flex items-center gap-2 rounded-full border border-slateb/25 bg-white/5 px-3 py-1 font-mono text-sm backdrop-blur">
+            <span class="icon icon-user h-3.5 w-3.5 text-slateb"></span>
+            <span class="text-neutral-100" x-text="owner.name"></span>
+            <span class="text-xs text-lime" x-text="owner.count"></span>
           </span>
         </template>
       </div>
@@ -64,48 +131,40 @@
     <div
       x-show="issues.length === 0"
       x-cloak
-      class="rounded-lg border border-dashed border-slate-300 bg-white/50 p-10 text-center
-             text-sm text-slate-400"
+      class="rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-10 text-center text-sm text-neutral-500"
     >
       No issues yet — click “Generate an issue” to start a triage.
     </div>
 
     <!-- One card per workflow, sorted most-recent first. -->
-    <div class="space-y-4">
+    <div class="space-y-6">
       <template x-for="issue in issues" :key="issue.workflowId">
-        <article class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <article class="animate-card-in overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur transition hover:border-violet/40">
           <div class="flex items-start justify-between gap-4">
-            <h3 class="font-medium leading-snug" x-text="issue.issueTitle"></h3>
+            <h3 class="min-w-0 pr-2 font-medium leading-snug text-white"><span class="mr-2.5 inline-flex h-6 w-6 shrink-0 -translate-y-px items-center justify-center rounded-md border border-amber-400/25 bg-amber-400/10 text-amber-300 align-middle"><span class="icon icon-bug h-4 w-4"></span></span><span x-text="issue.issueTitle"></span></h3>
             <template x-if="issue.assignedOwner">
-              <span
-                class="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium
-                       text-emerald-700"
-              >
+              <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-lime/30 bg-lime/10 px-2.5 py-1 font-mono text-xs text-lime">
+                <span class="icon icon-user h-3.5 w-3.5"></span>
                 <span x-text="issue.assignedOwner"></span>
               </span>
             </template>
-            <!-- Failed triage: a red pill, same shape as the owner chip. -->
             <template x-if="!issue.assignedOwner && issue.currentStep === 'FAILED'">
-              <span
-                class="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium
-                       text-red-700"
-              >
+              <span class="inline-flex shrink-0 items-center rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-1 font-mono text-xs text-red-400">
                 Failed
               </span>
             </template>
-            <!-- In progress: no owner yet and not failed. -->
             <template x-if="!issue.assignedOwner && issue.currentStep !== 'FAILED'">
-              <span class="shrink-0 text-xs text-slate-400">triaging…</span>
+              <span class="shrink-0 font-mono text-xs text-slateb">triaging…</span>
             </template>
           </div>
 
           <!-- 5-step progress indicator matching the Step enum. -->
-          <div class="mt-4 flex gap-1.5">
+          <div class="mt-6 flex gap-2">
             <template x-for="step in steps" :key="step">
               <div class="flex-1">
-                <div class="h-1.5 rounded-full" :class="segmentClass(issue, step)"></div>
+                <div class="h-3 rounded-full" :class="segmentClass(issue, step)"></div>
                 <p
-                  class="mt-1.5 text-[10px] leading-tight"
+                  class="mt-2.5 font-mono text-[10px] leading-tight"
                   :class="labelClass(issue, step)"
                   x-text="stepLabels[step]"
                 ></p>
@@ -130,7 +189,7 @@
       const STEP_LABELS = {
         ISSUE_RECEIVED: "Received",
         AI_ANALYSIS: "AI analysis",
-        OWNER_SELECTED: "Selected",
+        OWNER_SELECTED: "Owner assigned",
         NOTIFYING: "Notifying",
         DONE: "Done",
         // FAILED is a terminal branch, not a happy-path step, so it stays out
@@ -193,32 +252,32 @@
         // is the current step, and pending otherwise. A failed triage paints every segment red.
         segmentClass(issue, step) {
           if (issue.currentStep === "FAILED") {
-            return "bg-red-500";
+            return "bg-red-500/70";
           }
           const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
           if (issue.currentStep === "DONE" || index < current) {
-            return "bg-emerald-500";
+            return "bg-lime";
           }
           if (index === current) {
-            return "bg-blue-500 animate-pulse";
+            return "bg-violet animate-pulse";
           }
-          return "bg-slate-200";
+          return "bg-white/10";
         },
 
         labelClass(issue, step) {
           if (issue.currentStep === "FAILED") {
-            return "text-red-600";
+            return "text-red-400";
           }
           const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
           if (issue.currentStep === "DONE" || index < current) {
-            return "text-emerald-600";
+            return "text-lime/80";
           }
           if (index === current) {
-            return "font-medium text-blue-600";
+            return "font-medium text-violet";
           }
-          return "text-slate-400";
+          return "text-neutral-600";
         },
 
         // Union of non-null owners seen across all workflows, with per-owner assignment counts.
@@ -232,14 +291,10 @@
           }
           return Object.entries(counts)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+            .sort((a, b) => a.name.localeCompare(b.name));
         },
       };
     }
   </script>
-
-  <style>
-    [x-cloak] { display: none !important; }
-  </style>
 </body>
 </html>

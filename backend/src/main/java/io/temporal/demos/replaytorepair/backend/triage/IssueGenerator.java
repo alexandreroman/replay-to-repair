@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /** Supplies random issues for the triage demo, drawn from a fixed in-memory dataset. */
 @Component
 class IssueGenerator {
-    /** Small static, fictional dataset covering distinct areas: backend, security, infra, frontend. */
+    /** Small static, fictional dataset covering distinct areas: backend, security, infra, frontend, analytics/ML. */
     private static final List<Issue> ISSUES = List.of(
             new Issue("checkout-500",
                     "Checkout endpoint returns HTTP 500 under load",
@@ -42,14 +42,6 @@ class IssueGenerator {
                     "Product search times out on large catalogs",
                     "The product search query performs a full table scan and times out once the "
                             + "catalog grows past a few hundred thousand rows."),
-            new Issue("reset-email-dropped",
-                    "Password reset emails silently dropped",
-                    "Password reset requests return success but the email is never delivered, because "
-                            + "failures from the mail provider are swallowed without logging."),
-            new Issue("avatar-upload-fails",
-                    "Avatar upload fails for large images",
-                    "Uploading a profile picture above a few megabytes fails with an opaque error, as the "
-                            + "request exceeds the server body-size limit without a clear message."),
             new Issue("csrf-missing",
                     "State-changing endpoints missing CSRF protection",
                     "Several POST endpoints accept requests without a CSRF token, letting a malicious "
@@ -74,10 +66,6 @@ class IssueGenerator {
                     "Dropdown menu hidden behind sticky header",
                     "The account dropdown renders underneath the sticky header due to a "
                             + "stacking-context conflict, so its top items are unclickable."),
-            new Issue("pagination-duplicates",
-                    "Pagination returns duplicate records",
-                    "Paging through results with an unstable sort key returns the same record on "
-                            + "adjacent pages while skipping others."),
             new Issue("timezone-offset",
                     "Timestamps shown in the wrong timezone",
                     "Activity timestamps are rendered in the server timezone instead of the viewer's, "
@@ -90,10 +78,6 @@ class IssueGenerator {
                     "Stale data served after cache invalidation",
                     "Updated records keep returning old values for minutes because the cache "
                             + "invalidation event is published before the write commits."),
-            new Issue("websocket-leak",
-                    "WebSocket connections leak memory over time",
-                    "Closed WebSocket sessions are never removed from the in-memory registry, so heap "
-                            + "usage grows until the process is restarted."),
             new Issue("csv-formula-injection",
                     "Exported CSV allows formula injection",
                     "User-supplied fields are written to CSV exports without escaping, so a crafted "
@@ -129,7 +113,31 @@ class IssueGenerator {
             new Issue("mobile-keyboard-overlap",
                     "On-screen keyboard hides the input field",
                     "On Android the on-screen keyboard covers the focused input at the bottom of the "
-                            + "form, so users cannot see what they type."));
+                            + "form, so users cannot see what they type."),
+            new Issue("recommendation-model-drift",
+                    "Recommendation model accuracy drops after retraining",
+                    "The nightly retraining job ships a model whose ranking accuracy is noticeably worse "
+                            + "than the previous one, degrading recommendation quality for every user."),
+            new Issue("dau-metric-mismatch",
+                    "Daily active users disagree across dashboards",
+                    "Two analytics dashboards report different daily-active-user counts for the same day "
+                            + "because each applies a different sessionization rule to the event stream."),
+            new Issue("feature-pipeline-drops-rows",
+                    "Feature pipeline silently drops rows with missing values",
+                    "The machine-learning feature pipeline discards any event with a null feature instead "
+                            + "of imputing it, quietly shrinking the training set and biasing the model."),
+            new Issue("ab-test-assignment-skew",
+                    "A/B experiment traffic split is skewed",
+                    "The experimentation framework assigns far more users to the control group than "
+                            + "intended, so variant results never reach statistical significance."),
+            new Issue("churn-model-stale-features",
+                    "Churn model scores on stale features",
+                    "The churn-prediction model scores users against features computed days earlier, so "
+                            + "recent behaviour never influences the prediction and alerts fire late."),
+            new Issue("funnel-double-counts",
+                    "Conversion funnel double-counts repeat events",
+                    "The analytics funnel counts a user who revisits a step twice as two separate "
+                            + "conversions, inflating the reported conversion rate on every dashboard."));
 
     /** Returns a randomly picked issue from the dataset. */
     Issue next() {
