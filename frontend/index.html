@@ -45,6 +45,16 @@
     }
     @keyframes title-shift { to { background-position: -200% center; } }
     @media (prefers-reduced-motion: reduce) { .title-gradient { animation: none; } }
+    /* A newly added issue card expands open from the top and fades in, which
+       pushes the cards below it down to make room. Only fresh DOM nodes play
+       this — Alpine reuses keyed nodes across polls, so existing cards stay put. */
+    @keyframes card-in {
+      from { max-height: 0; opacity: 0; transform: translateY(-8px); }
+      60%  { opacity: 1; }
+      to   { max-height: 320px; opacity: 1; transform: translateY(0); }
+    }
+    .animate-card-in { animation: card-in 500ms ease-out; }
+    @media (prefers-reduced-motion: reduce) { .animate-card-in { animation: none; } }
     [x-cloak] { display: none !important; }
   </style>
 </head>
@@ -100,7 +110,7 @@
     <!-- One card per workflow, sorted most-recent first. -->
     <div class="space-y-6">
       <template x-for="issue in issues" :key="issue.workflowId">
-        <article class="rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur transition hover:border-violet/40">
+        <article class="animate-card-in overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur transition hover:border-violet/40">
           <div class="flex items-start justify-between gap-4">
             <h3 class="min-w-0 pr-2 font-medium leading-snug text-white"><span class="mr-2.5 inline-flex h-6 w-6 shrink-0 -translate-y-px items-center justify-center rounded-md border border-amber-400/25 bg-amber-400/10 text-amber-300 align-middle"><span class="icon icon-bug h-4 w-4"></span></span><span x-text="issue.issueTitle"></span></h3>
             <template x-if="issue.assignedOwner">
