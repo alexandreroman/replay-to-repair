@@ -25,10 +25,9 @@
     }
     .stars { position: fixed; inset: 0; pointer-events: none;
       background-image: radial-gradient(1px 1px at 20% 30%, #fff6, transparent), radial-gradient(1px 1px at 70% 20%, #fff5, transparent), radial-gradient(1px 1px at 40% 70%, #fff4, transparent), radial-gradient(1px 1px at 85% 60%, #fff5, transparent), radial-gradient(1px 1px at 55% 45%, #fff3, transparent); }
-    .grid { position: fixed; inset: 0; pointer-events: none;
+    .grid-overlay { position: fixed; inset: 0; pointer-events: none;
       background-image: linear-gradient(#ffffff0a 1px, transparent 1px), linear-gradient(90deg, #ffffff0a 1px, transparent 1px);
       background-size: 64px 64px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 55%); mask-image: linear-gradient(180deg, #000, transparent 55%); }
-    .grad { background-image: linear-gradient(100deg, #8B5CF6, #5B7CFA); }
     /* Icons live on disk (icons/*.svg) and are tinted via currentColor through a CSS mask. */
     .icon { display: inline-block; background-color: currentColor;
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
@@ -89,7 +88,7 @@
   </style>
 </head>
 <body class="h-full font-display text-neutral-200 antialiased">
-  <div class="stars"></div><div class="grid"></div>
+  <div class="stars"></div><div class="grid-overlay"></div>
   <div x-data="dashboard()" class="relative mx-auto max-w-3xl px-6 py-20">
     <header class="mb-8 flex items-end justify-between gap-4">
       <div>
@@ -99,7 +98,7 @@
       <button
         @click="generate()"
         :disabled="generating"
-        class="grad grad-btn shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
+        class="grad-btn bg-[linear-gradient(100deg,#8B5CF6,#5B7CFA)] shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
       >
         <span x-text="generating ? 'Generating…' : 'Generate an issue'"></span>
       </button>
@@ -142,7 +141,14 @@
       <template x-for="issue in issues" :key="issue.workflowId">
         <article class="animate-card-in overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur transition hover:border-violet/40">
           <div class="flex items-start justify-between gap-4">
-            <h3 class="min-w-0 pr-2 font-medium leading-snug text-white"><span class="mr-2.5 inline-flex h-6 w-6 shrink-0 -translate-y-px items-center justify-center rounded-md border border-amber-400/25 bg-amber-400/10 text-amber-300 align-middle"><span class="icon icon-bug h-4 w-4"></span></span><span x-text="issue.issueTitle"></span></h3>
+            <h3 class="min-w-0 pr-2 font-medium leading-snug text-white">
+              <span
+                class="mr-2.5 inline-flex h-6 w-6 shrink-0 -translate-y-px items-center justify-center rounded-md border border-amber-400/25 bg-amber-400/10 text-amber-300 align-middle"
+              >
+                <span class="icon icon-bug h-4 w-4"></span>
+              </span>
+              <span x-text="issue.issueTitle"></span>
+            </h3>
             <template x-if="issue.assignedOwner">
               <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-lime/30 bg-lime/10 px-2.5 py-1 font-mono text-xs text-lime">
                 <span class="icon icon-user h-3.5 w-3.5"></span>
@@ -249,36 +255,40 @@
           return this.steps.indexOf(step);
         },
 
-        // A step is completed once the workflow moves past it (or reaches DONE), active while it
-        // is the current step, and pending otherwise. A failed triage paints every segment red.
-        segmentClass(issue, step) {
+        // Classifies a step relative to the issue's current step. A failed
+        // triage marks every step failed; steps before the current one (or all
+        // steps once DONE) are done, the current step is active, the rest pending.
+        stepState(issue, step) {
           if (issue.currentStep === "FAILED") {
-            return "bg-red-500/70";
+            return "failed";
           }
           const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
           if (issue.currentStep === "DONE" || index < current) {
-            return "bg-lime";
+            return "done";
           }
           if (index === current) {
-            return "bg-violet animate-pulse";
+            return "active";
           }
-          return "bg-white/10";
+          return "pending";
+        },
+
+        segmentClass(issue, step) {
+          return {
+            failed: "bg-red-500/70",
+            done: "bg-lime",
+            active: "bg-violet animate-pulse",
+            pending: "bg-white/10",
+          }[this.stepState(issue, step)];
         },
 
         labelClass(issue, step) {
-          if (issue.currentStep === "FAILED") {
-            return "text-red-400";
-          }
-          const current = this.stepIndex(issue.currentStep);
-          const index = this.stepIndex(step);
-          if (issue.currentStep === "DONE" || index < current) {
-            return "text-lime/80";
-          }
-          if (index === current) {
-            return "font-medium text-violet";
-          }
-          return "text-neutral-600";
+          return {
+            failed: "text-red-400",
+            done: "text-lime/80",
+            active: "font-medium text-violet",
+            pending: "text-neutral-600",
+          }[this.stepState(issue, step)];
         },
 
         // Union of non-null owners seen across all workflows, with per-owner assignment counts.
