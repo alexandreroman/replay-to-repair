@@ -36,10 +36,10 @@ Implemented and committed:
 - README with the full demo narrative, and ECS structured logging across all
   processes (see [[ecs-logging-all-processes]]).
 
-Two `@Disabled` tests stay disabled by design so `make test` is green while the
-bug is committed: `SelectOwnerReplayTest` (the replay demo, RED with the bug and
-GREEN once the debug line is removed) and `GenerateHistoryFixtureTest` (the
-fixture generator). Run them from the IDE for the demo.
+`make test` stays green with the intentional bug committed: the demo's
+`IssueTriageWorkflowReplayTest` replays the workflow and guards determinism
+without exercising the buggy Activity, so the committed `if (true)`
+short-circuit never fails it.
 
 No implementation work is outstanding.
 
