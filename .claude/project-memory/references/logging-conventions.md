@@ -13,12 +13,16 @@ not interpolated into the message string:
 LOGGER.atInfo()
         .addKeyValue("issueId", issue.id())
         .addKeyValue("owner", owner)
-        .log("Owner selected");
+        .log("triage.owner.selected");
 ```
 
 Use `.addKeyValue(key, value)` for context, `.setCause(throwable)` for
-exceptions, and a short, constant human-readable `.log("...")` message. Use
-`atInfo()`, `atWarn()`, `atDebug()` as appropriate.
+exceptions, and a short **domain code** as the `.log("...")` message — a dotted,
+greppable identifier (e.g. `triage.owner.selected`, `replay.history.activity_found`),
+**not** a human-readable sentence. The same event logged at two layers (e.g. an
+activity and the workflow that calls it) intentionally shares the same domain
+code so it stays greppable across layers. Use `atInfo()`, `atWarn()`,
+`atDebug()` as appropriate.
 
 In Temporal **workflow** code, obtain the logger via
 `io.temporal.workflow.Workflow.getLogger(TheWorkflowImpl.class)` (a replay-aware

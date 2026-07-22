@@ -38,7 +38,7 @@ public class TriageActivitiesImpl implements TriageActivities {
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
-                .log("Selected owner for issue");
+                .log("triage.owner.selected");
         return owner;
     }
 
@@ -49,7 +49,7 @@ public class TriageActivitiesImpl implements TriageActivities {
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
                 .addKeyValue("owner", owner)
-                .log("Notified issue assignment");
+                .log("triage.assignment.notified");
     }
 
     private static String buildUserPrompt(Issue issue) {

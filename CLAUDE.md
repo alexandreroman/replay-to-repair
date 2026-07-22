@@ -33,6 +33,17 @@ the containerized gateway proxies to it via `host.containers.internal`.
 - `frontend` — single static HTML page, no build step.
 - `gateway` — Caddy: serves the frontend, proxies `/api/*` to the backend.
 
+## Intentional demo bug — do not "fix" it
+
+The `if (true) { return "alice"; }` short-circuit (and its `// TODO: remove,
+just testing` marker) in `TriageActivitiesImpl.selectOwner` is the **deliberate
+core of the demo**, not leftover debug code. Never propose to remove, simplify,
+or clean it up — the unreachable code below it is expected. The demo replays a
+real event history to reproduce and fix this exact Activity bug; removing it
+destroys the demo. Static analysis, linters, and subagents will keep flagging
+it as dead code — filter any such "pre-existing issue" or cleanup suggestion
+against this note before relaying it (subagents cannot see it).
+
 ## Agents
 
 Use the following agents (from the
