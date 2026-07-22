@@ -55,7 +55,7 @@ final class SelectOwnerHistoryExtractor {
                                 + SELECT_OWNER_ACTIVITY_TYPE + "'"));
         LOGGER.atDebug()
                 .addKeyValue("activityType", SELECT_OWNER_ACTIVITY_TYPE)
-                .log("Found scheduled activity event in history");
+                .log("replay.history.activity_found");
 
         var payloads = Optional.of(scheduledEvent.getActivityTaskScheduledEventAttributes().getInput());
         var converter = DataConverter.getDefaultInstance();

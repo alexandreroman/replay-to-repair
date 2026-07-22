@@ -38,7 +38,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
-                .log("Received issue for triage");
+                .log("triage.issue.received");
 
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
         var owner = activities.selectOwner(issue);
@@ -46,14 +46,14 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
-                .log("Owner selected");
+                .log("triage.owner.selected");
 
         activities.notifyAssignment(issue, owner);
         currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
-                .log("Triage complete");
+                .log("triage.completed");
         return currentStatus;
     }
 

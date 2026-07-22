@@ -93,7 +93,7 @@ class IssueController {
                 .addKeyValue("workflowId", workflowId)
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
-                .log("Started triage workflow");
+                .log("triage.workflow.started");
 
         return new GenerateResponse(workflowId, issue);
     }
@@ -128,7 +128,7 @@ class IssueController {
             LOGGER.atWarn()
                     .addKeyValue("workflowId", workflowId)
                     .setCause(e)
-                    .log("Could not resolve triage status; returning neutral view");
+                    .log("triage.status.unresolved");
             return neutralView(execution);
         }
     }
