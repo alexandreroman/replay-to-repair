@@ -49,7 +49,8 @@ services:
           memory: 512M
     restart: on-failure
 
-  # Caddy: serves the static frontend and reverse-proxies /api/* to the backend.
+  # Caddy: serves the static frontend and reverse-proxies /api/* to the backend
+  # and /temporal to the Temporal Web UI.
   # BACKEND_UPSTREAM lets `make dev` point the gateway at a locally-run backend
   # instead of the backend container.
   # The gateway is the ONLY container that must reach back to the host — the

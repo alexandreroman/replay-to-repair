@@ -41,23 +41,23 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         // Never use Instant.now() inside workflow code: derive the timestamp from the deterministic
         // workflow clock and keep it fixed for the whole execution.
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.ISSUE_RECEIVED, null, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.ISSUE_RECEIVED, null);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
                 .log("triage.issue.received");
 
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.AI_ANALYSIS, null, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.AI_ANALYSIS, null);
         var owner = activities.selectOwner(issue);
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.OWNER_SELECTED, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.OWNER_SELECTED, owner);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
                 .log("triage.owner.selected");
 
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.NOTIFYING, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.NOTIFYING, owner);
         activities.notifyAssignment(issue, owner);
-        currentStatus = new TriageStatus(issue.id(), issue.title(), Step.DONE, owner, receivedAt);
+        currentStatus = statusAt(issue, receivedAt, Step.DONE, owner);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
@@ -68,5 +68,9 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     @Override
     public TriageStatus getStatus() {
         return currentStatus;
+    }
+
+    private static TriageStatus statusAt(Issue issue, Instant receivedAt, Step step, String owner) {
+        return new TriageStatus(issue.id(), issue.title(), step, owner, receivedAt);
     }
 }

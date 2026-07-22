@@ -129,12 +129,11 @@ class IssueController {
                     .addKeyValue("workflowId", workflowId)
                     .setCause(e)
                     .log("triage.status.unresolved");
-            return neutralView(execution);
+            return neutralView(execution, workflowId);
         }
     }
 
-    private IssueView neutralView(WorkflowExecutionMetadata execution) {
-        var workflowId = execution.getExecution().getWorkflowId();
+    private IssueView neutralView(WorkflowExecutionMetadata execution, String workflowId) {
         return new IssueView(workflowId, issueTitleFromMemo(execution),
                 TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime());
     }

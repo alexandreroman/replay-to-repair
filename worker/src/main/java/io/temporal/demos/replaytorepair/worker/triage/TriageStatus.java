@@ -18,7 +18,6 @@ public record TriageStatus(
         Step currentStep,
         String assignedOwner,
         Instant receivedAt) {
-
     public enum Step {
         ISSUE_RECEIVED,
         AI_ANALYSIS,

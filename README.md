@@ -26,9 +26,10 @@ becomes straightforward — and it ships to production faster.
 - **Docker** or **Podman** with the Compose plugin
 - **Anthropic API key** — the owner-selection Activity calls Claude via
   Spring AI
-- **Temporal CLI** (optional) — one of the two documented ways to capture a
-  Workflow's event history; the Web UI at <http://localhost:8080/temporal> is
-  the other and covers the rest of the demo needs
+- **Temporal CLI** (optional) — used by `make capture-history` and the manual
+  capture route to export a Workflow's event history; the Web UI at
+  <http://localhost:8080/temporal> is another way and covers the rest of the
+  demo needs
 
 ## Getting Started
 
@@ -66,11 +67,11 @@ containers. Run `make` (or `make help`) to list every target.
 
 The gateway on `8080` is the single browser entry point.
 
-| Port   | Service                                                              |
-| ------ | ------------------------------------------------------------------- |
-| `8080` | Gateway — dashboard, `/api/*` → backend, `/temporal` → Temporal Web UI |
-| `7233` | Temporal gRPC (workers and the backend connect here)                |
-| `8081` | Local backend, `make dev` only (the gateway proxies to it)          |
+| Port   | Service                                                      |
+| ------ | ------------------------------------------------------------ |
+| `8080` | Gateway: dashboard, `/api/*` → backend, `/temporal` → Web UI |
+| `7233` | Temporal gRPC (workers and the backend connect here)         |
+| `8081` | Local backend, `make dev` only (the gateway proxies to it)   |
 
 ## The demo
 
@@ -171,7 +172,7 @@ graph TD
     Gateway -->|static files| Frontend[Static dashboard]
     Gateway -->|/api/*| Backend[Backend REST API]
     Gateway -->|/temporal| Temporal[(Temporal server)]
-    Backend -->|start / query workflows| Temporal[(Temporal server)]
+    Backend -->|start / query workflows| Temporal
     Worker[Worker - local process] -->|poll task queue| Temporal
     Worker -->|owner selection| Claude[Anthropic Claude]
 ```
