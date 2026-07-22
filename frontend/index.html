@@ -55,6 +55,35 @@
     }
     .animate-card-in { animation: card-in 500ms ease-out; }
     @media (prefers-reduced-motion: reduce) { .animate-card-in { animation: none; } }
+    /* Focus state for the generate button: a conic-gradient that rotates around
+       the border. The mask keeps the gradient to a 2px ring; @property makes the
+       angle animatable so it can spin. */
+    @property --btn-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    @keyframes btn-spin { to { --btn-angle: 360deg; } }
+    .grad-btn { position: relative; }
+    .grad-btn:focus-visible { outline: none; }
+    .grad-btn::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 11px;
+      padding: 3px;
+      background: conic-gradient(from var(--btn-angle), #8B5CF6, #22D3EE, #B6F35A, #22D3EE, #8B5CF6);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+              mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.55));
+      opacity: 0;
+      transition: opacity .2s ease;
+      pointer-events: none;
+    }
+    .grad-btn:hover::before,
+    .grad-btn:focus-visible::before { opacity: 1; animation: btn-spin 2.5s linear infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .grad-btn:hover::before,
+      .grad-btn:focus-visible::before { animation: none; }
+    }
     [x-cloak] { display: none !important; }
   </style>
 </head>
@@ -69,7 +98,7 @@
       <button
         @click="generate()"
         :disabled="generating"
-        class="grad shrink-0 px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
+        class="grad grad-btn shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
       >
         <span x-text="generating ? 'Generating…' : 'Generate an issue'"></span>
       </button>
