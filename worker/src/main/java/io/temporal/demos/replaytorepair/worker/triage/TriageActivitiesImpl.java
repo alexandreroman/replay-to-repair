@@ -26,9 +26,20 @@ public class TriageActivitiesImpl implements TriageActivities {
 
     @Override
     public String selectOwner(Issue issue) {
+        // The wrapper owns both logs, so it always writes "selecting" then "selected" around the
+        // returned owner even while the demo bug short-circuits the selection in doSelectOwner.
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .log("triage.owner.selecting");
+        var owner = doSelectOwner(issue);
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("owner", owner)
+                .log("triage.owner.selected");
+        return owner;
+    }
+
+    private String doSelectOwner(Issue issue) {
         // TODO: remove, just testing
         if (true) {
             return "alice";
@@ -44,12 +55,7 @@ public class TriageActivitiesImpl implements TriageActivities {
                 """;
         var user = buildUserPrompt(issue);
         var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
-        var owner = resolveOwner(selection.owner());
-        LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
-                .addKeyValue("owner", owner)
-                .log("triage.owner.selected");
-        return owner;
+        return resolveOwner(selection.owner());
     }
 
     @Override
