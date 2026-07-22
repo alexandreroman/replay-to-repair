@@ -20,7 +20,9 @@ Implemented and committed:
   `NoSuitableOwner` failure that terminates the workflow, and the activity
   retry policy is bounded (see [[demo-design-constraints]]).
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
-  the Alpine.js dashboard, served through the Caddy gateway.
+  the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
+  a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
+  `NoSuitableOwner` failure), rather than the neutral "received" placeholder.
 - Temporal Web UI proxied at `/temporal`.
 - A committed event-history fixture
   (`worker/src/test/resources/history/issue-triage.json`) and a single

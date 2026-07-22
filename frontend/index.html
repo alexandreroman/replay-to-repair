@@ -84,7 +84,17 @@
                 <span x-text="issue.assignedOwner"></span>
               </span>
             </template>
-            <template x-if="!issue.assignedOwner">
+            <!-- Failed triage: a red pill, same shape as the owner chip. -->
+            <template x-if="!issue.assignedOwner && issue.currentStep === 'FAILED'">
+              <span
+                class="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium
+                       text-red-700"
+              >
+                Failed
+              </span>
+            </template>
+            <!-- In progress: no owner yet and not failed. -->
+            <template x-if="!issue.assignedOwner && issue.currentStep !== 'FAILED'">
               <span class="shrink-0 text-xs text-slate-400">triaging…</span>
             </template>
           </div>
@@ -123,6 +133,9 @@
         OWNER_SELECTED: "Selected",
         NOTIFYING: "Notifying",
         DONE: "Done",
+        // FAILED is a terminal branch, not a happy-path step, so it stays out
+        // of STEPS; it only needs a label for the badge.
+        FAILED: "Failed",
       };
 
       return {
@@ -177,8 +190,11 @@
         },
 
         // A step is completed once the workflow moves past it (or reaches DONE), active while it
-        // is the current step, and pending otherwise.
+        // is the current step, and pending otherwise. A failed triage paints every segment red.
         segmentClass(issue, step) {
+          if (issue.currentStep === "FAILED") {
+            return "bg-red-500";
+          }
           const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
           if (issue.currentStep === "DONE" || index < current) {
@@ -191,6 +207,9 @@
         },
 
         labelClass(issue, step) {
+          if (issue.currentStep === "FAILED") {
+            return "text-red-600";
+          }
           const current = this.stepIndex(issue.currentStep);
           const index = this.stepIndex(step);
           if (issue.currentStep === "DONE" || index < current) {
