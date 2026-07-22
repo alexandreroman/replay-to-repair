@@ -55,6 +55,16 @@
     }
     .animate-card-in { animation: card-in 500ms ease-out; }
     @media (prefers-reduced-motion: reduce) { .animate-card-in { animation: none; } }
+    /* A newly assigned owner chip pops in with a scale-up + fade, plus a brief
+       lime glow that fades out to draw the eye. Like the cards, only fresh DOM
+       nodes play this — chips are keyed by owner name, so existing ones stay put. */
+    @keyframes owner-in {
+      from { opacity: 0; transform: scale(0.85); box-shadow: 0 0 0 0 rgba(182, 243, 90, 0); }
+      50%  { opacity: 1; box-shadow: 0 0 14px 1px rgba(182, 243, 90, 0.45); }
+      to   { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(182, 243, 90, 0); }
+    }
+    .animate-owner-in { animation: owner-in 450ms ease-out; }
+    @media (prefers-reduced-motion: reduce) { .animate-owner-in { animation: none; } }
     /* Focus state for the generate button: a conic-gradient that rotates around
        the border. The mask keeps the gradient to a 2px ring; @property makes the
        angle animatable so it can spin. */
@@ -118,7 +128,7 @@
       <h2 class="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-500">Owners</h2>
       <div class="flex flex-wrap gap-2.5">
         <template x-for="owner in owners()" :key="owner.name">
-          <span class="inline-flex items-center gap-2 rounded-full border border-slateb/25 bg-white/5 px-3 py-1 font-mono text-sm backdrop-blur">
+          <span class="animate-owner-in inline-flex items-center gap-2 rounded-full border border-slateb/25 bg-white/5 px-3 py-1 font-mono text-sm backdrop-blur">
             <span class="icon icon-user h-3.5 w-3.5 text-slateb"></span>
             <span class="text-neutral-100" x-text="owner.name"></span>
             <span class="text-xs text-lime" x-text="owner.count"></span>
