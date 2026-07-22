@@ -1,0 +1,13 @@
+# Overlay for the `test` profile: merged on top of the base application.yaml
+# rather than replacing it, so the main worker settings (auto-discovery
+# packages, Spring AI, skills, ECS logging) still apply. Only test-specific
+# overrides live here.
+spring:
+  # Load the repo-root .env (one level above the worker module) if present, so
+  # tests call the real LLM with the real key.
+  config:
+    import: "optional:file:../.env[.properties]"
+  # Start an in-memory Temporal test server so tests need no external instance.
+  temporal:
+    test-server:
+      enabled: true
