@@ -1,10 +1,10 @@
-# Start an in-memory Temporal test server and provide a dummy LLM key so the
-# context-load test needs neither an external Temporal instance nor a real
-# Anthropic API key.
+# Start an in-memory Temporal test server so the context-load test needs no
+# external Temporal instance. The LLM API key comes from the repo-root
+# .env file (one level above the worker module), loaded below, so tests call
+# the real LLM with the real key.
 spring:
+  config:
+    import: "optional:file:../.env[.properties]"
   temporal:
     test-server:
       enabled: true
-  ai:
-    anthropic:
-      api-key: test-key
