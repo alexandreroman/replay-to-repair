@@ -177,7 +177,7 @@
           return this.steps.indexOf(step);
         },
 
-        // A step is completed once the workflow moved past it (or reached DONE), active while it
+        // A step is completed once the workflow moves past it (or reaches DONE), active while it
         // is the current step, and pending otherwise.
         segmentClass(issue, step) {
           const current = this.stepIndex(issue.currentStep);

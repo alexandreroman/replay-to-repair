@@ -24,6 +24,9 @@ public class TriageActivitiesImpl implements TriageActivities {
 
     @Override
     public String selectOwner(Issue issue) {
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .log("triage.owner.selecting");
         // TODO: remove, just testing
         if (true) {
             return "alice";
@@ -72,8 +75,8 @@ public class TriageActivitiesImpl implements TriageActivities {
                 """.formatted(issue.title(), issue.description());
     }
 
-    // The roster now lives in the issue-triage skill and is only known LLM-side, so we cannot match
-    // the reply against known names here. This is a minimal non-blank sanity check: a null or blank
+    // The roster lives in the issue-triage skill and is only known LLM-side, so the reply cannot be
+    // matched against known names here. This is a minimal non-blank sanity check: a null or blank
     // answer is treated as a failure so Temporal retries the activity, rather than assigning a blank
     // owner.
     private static String resolveOwner(String answer) {

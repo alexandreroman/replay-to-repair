@@ -17,10 +17,9 @@ import io.temporal.common.converter.DataConverter;
  * Extracts the real input of the {@code selectOwner} activity from a Temporal event history, as
  * produced by {@code temporal workflow show --output json}.
  *
- * <p>This is the core of the "replay to repair" workflow: instead of guessing which data triggered
- * a production bug, we decode the exact {@link Issue} that actually flowed into the failing
- * activity, using the SDK's default {@link DataConverter}, and feed it straight into a regression
- * test.
+ * <p>This is the core of the "replay to repair" workflow: instead of guessing which data triggers
+ * a production bug, we decode the exact {@link Issue} that flows into the failing activity, using
+ * the SDK's default {@link DataConverter}, and feed it straight into a regression test.
  */
 final class SelectOwnerHistoryExtractor {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectOwnerHistoryExtractor.class);

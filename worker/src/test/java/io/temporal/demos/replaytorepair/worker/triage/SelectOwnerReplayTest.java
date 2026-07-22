@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 /**
  * Reproduces the production bug from the captured event history, the "repair" half of the demo.
  *
- * <p>It replays the exact {@link Issue} that flowed into the failing {@code selectOwner} activity in
+ * <p>It replays the exact {@link Issue} that flows into the failing {@code selectOwner} activity in
  * production, runs the activity directly against a stubbed LLM that correctly answers
  * {@code "carol"} (the security specialist), and asserts the assignment.
  *

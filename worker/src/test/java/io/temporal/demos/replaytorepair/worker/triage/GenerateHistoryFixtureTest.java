@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
  * Regenerates the committed event-history fixture used by {@link SelectOwnerReplayTest}.
  *
  * <p>The fixture is a genuine history produced by the real SDK, standing in for a "production"
- * execution that mis-assigned a security issue. The committed bug in
+ * execution that mis-assigns a security issue. The committed bug in
  * {@link TriageActivitiesImpl#selectOwner} makes the run fully deterministic (it returns
  * {@code "alice"} without ever calling the LLM), so no API key or network is required.
  *
