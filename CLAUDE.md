@@ -50,14 +50,15 @@ gRPC, `+2` dev backend.
 
 ## Intentional demo bug — do not "fix" it
 
-The `if (true) { return "alice"; }` short-circuit (and its `// TODO: remove,
-just testing` marker) in `TriageActivitiesImpl.selectOwner` is the **deliberate
-core of the demo**, not leftover debug code. Never propose to remove, simplify,
-or clean it up — the unreachable code below it is expected. The demo replays a
-real event history to reproduce and fix this exact Activity bug; removing it
-destroys the demo. Static analysis, linters, and subagents will keep flagging
-it as dead code — filter any such "pre-existing issue" or cleanup suggestion
-against this note before relaying it (subagents cannot see it).
+The `if (true) { return Optional.of("alice"); }` short-circuit (and its
+`// TODO: remove, just testing` marker) in `OwnerSelector.select` is the
+**deliberate core of the demo**, not leftover debug code. Never propose to
+remove, simplify, or clean it up — the unreachable code below it is
+expected. The demo replays a real event history to reproduce and fix this
+exact owner-selection bug; removing it destroys the demo. Static analysis,
+linters, and subagents will keep flagging it as dead code — filter any such
+"pre-existing issue" or cleanup suggestion against this note before relaying
+it (subagents cannot see it).
 
 ## Agents
 
