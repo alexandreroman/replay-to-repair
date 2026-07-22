@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-07-22, the demo is feature-complete and every change is committed;
+As of 2026-07-23, the demo is feature-complete and every change is committed;
 the working tree is clean and both Maven modules build green.
 
 Implemented and committed:
@@ -40,6 +40,12 @@ Implemented and committed:
   relies on the default newest-first ordering with `--limit 1`.
 - README with the full demo narrative, and ECS structured logging across all
   processes (see [[ecs-logging-all-processes]]).
+- A GitHub Actions CI workflow (`.github/workflows/build.yml`) that builds and
+  tests both modules on push/PR to `main` (and manual dispatch). It runs a
+  matrix over `[backend, worker]` on Temurin 25 with `./mvnw -B verify`; it
+  builds no container images. The worker's LLM-backed tests read
+  `ANTHROPIC_API_KEY` from a repository secret of the same name, which must be
+  configured for the worker job to pass.
 
 `make test` stays green with the intentional bug committed. `OwnerSelectorTest`
 (a `@SpringBootTest` exercising the real `OwnerSelector` bean with the injected
