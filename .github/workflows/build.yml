@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (e.g. new pushes to a PR branch).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # backend and worker are independent Maven projects (no shared
+        # parent pom), so they build in parallel.
+        module: [backend, worker]
+    env:
+      # The worker's tests call the real Anthropic API; the backend does not
+      # need this, so exposing it to both jobs is harmless.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+          cache-dependency-path: ${{ matrix.module }}/pom.xml
+
+      # verify compiles, runs the tests, and packages the JAR. No container
+      # image is built or pushed.
+      - name: Build and test
+        working-directory: ${{ matrix.module }}
+        run: ./mvnw -B verify
