@@ -25,8 +25,8 @@ public class TriageActivitiesImpl implements TriageActivities {
         if (true) {
             return "alice";
         }
-        // Real logic below. It is unreachable while the debug line above is present, but it still
-        // compiles: Java does not flag statements after `if (true) return` as unreachable code.
+        // Ask the LLM to pick the owner best suited to the issue, using the
+        // issue-triage skill for the roster and rules, then validate the reply.
         var system = """
                 You are an issue-triage assistant. Use the "issue-triage" skill to learn the
                 owner roster and the selection rules, then pick the single owner best suited
