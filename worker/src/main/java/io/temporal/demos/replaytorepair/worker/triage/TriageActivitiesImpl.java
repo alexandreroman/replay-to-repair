@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.spring.boot.ActivityImpl;
 
 @Component
@@ -14,6 +15,7 @@ import io.temporal.spring.boot.ActivityImpl;
 public class TriageActivitiesImpl implements TriageActivities {
     private static final Logger LOGGER = LoggerFactory.getLogger(TriageActivitiesImpl.class);
     private static final Duration NOTIFY_DELAY = Duration.ofSeconds(2);
+    private static final String NO_SUITABLE_OWNER = "none";
 
     private final ChatClient chatClient;
 
@@ -36,7 +38,9 @@ public class TriageActivitiesImpl implements TriageActivities {
         var system = """
                 You are an issue-triage assistant. Use the "issue-triage" skill to learn the
                 owner roster and the selection rules, then pick the single owner best suited
-                to the given issue. Reply with exactly one owner name from that roster.
+                to the given issue. Reply with exactly one owner name from that roster, or the
+                single token "none" if no owner is suitable. Never force a poor match and never
+                invent a name.
                 """;
         var user = buildUserPrompt(issue);
         var selection = chatClient.prompt().system(system).user(user).call().entity(OwnerSelection.class);
@@ -76,13 +80,17 @@ public class TriageActivitiesImpl implements TriageActivities {
     }
 
     // The roster lives in the issue-triage skill and is only known LLM-side, so the reply cannot be
-    // matched against known names here. This is a minimal non-blank sanity check: a null or blank
-    // answer is treated as a failure so Temporal retries the activity, rather than assigning a blank
-    // owner.
+    // matched against known names here. A blank answer is a malformed reply and stays retryable so
+    // Temporal tries again, while the "none" token is a deliberate no-owner verdict that fails the
+    // activity non-retryably and terminates the workflow in error.
     private static String resolveOwner(String answer) {
         var candidate = answer == null ? "" : answer.trim();
         if (candidate.isEmpty()) {
             throw new IllegalStateException("LLM returned a blank owner");
+        }
+        if (candidate.equalsIgnoreCase(NO_SUITABLE_OWNER)) {
+            throw ApplicationFailure.newNonRetryableFailure(
+                    "No suitable owner in the roster for this issue", "NoSuitableOwner");
         }
         return candidate;
     }

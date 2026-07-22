@@ -15,7 +15,10 @@ Implemented and committed:
   `selectOwner`/`notifyAssignment` regular), with the intentional
   `if (true) { return "alice"; }` bug in `selectOwner`.
 - Owner-selection roster and rules loaded via `SkillsTool` from a single
-  `SKILL.md` (see [[skills-tool-owner-roster]]).
+  `SKILL.md` (see [[skills-tool-owner-roster]]). The skill returns the `none`
+  token when no owner fits; `selectOwner` raises a non-retryable
+  `NoSuitableOwner` failure that terminates the workflow, and the activity
+  retry policy is bounded (see [[demo-design-constraints]]).
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway.
 - Temporal Web UI proxied at `/temporal`.
