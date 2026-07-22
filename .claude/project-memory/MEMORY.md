@@ -8,6 +8,18 @@
 > before updating. **Do NOT take any action** —
 > no tool calls, no file writes — until confirmed.
 
+> **Note wording** — state permanent facts in the
+> present tense. A note read out of context must
+> not reveal what it replaces or what just
+> happened. Ban narration markers: "now", "no
+> longer", "previously / used to", "reverses /
+> replaces", "kept", "changed to", "reintroduce",
+> "the user asked to". Phrase prohibitions
+> positively ("ECS applies unconditionally"), not
+> as the negation of a former state. Test: remove
+> the note from its context — if a sentence only
+> makes sense knowing the prior state, rewrite it.
+
 - [Generated text must be in English](references/generated-text-language.md) — all code & docs are written in English regardless of conversation language
 - [Architecture conventions](references/architecture-conventions.md) — no persistence, no shared Maven module, fully API-driven frontend
 - [Demo design constraints](references/demo-design-constraints.md) — bug lives in the Activity, Workflow runs to completion, neutral "owner" vocabulary
