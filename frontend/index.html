@@ -33,6 +33,18 @@
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; -webkit-mask-size: contain; mask-size: contain; }
     .icon-bug { -webkit-mask-image: url("icons/bug.svg"); mask-image: url("icons/bug.svg"); }
     .icon-user { -webkit-mask-image: url("icons/user.svg"); mask-image: url("icons/user.svg"); }
+    /* Continuously sweeping gradient across the title text. First and last
+       stops match so the loop is seamless. */
+    .title-gradient {
+      background-image: linear-gradient(90deg, #8B5CF6, #5B7CFA, #B6F35A, #5B7CFA, #8B5CF6);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: title-shift 6s linear infinite;
+    }
+    @keyframes title-shift { to { background-position: -200% center; } }
+    @media (prefers-reduced-motion: reduce) { .title-gradient { animation: none; } }
     [x-cloak] { display: none !important; }
   </style>
 </head>
@@ -42,7 +54,7 @@
     <header class="mb-8 flex items-end justify-between gap-4">
       <div>
         <p class="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-slateb">Event-history replay · Powered by Temporal</p>
-        <h1 class="text-4xl font-semibold leading-none tracking-tight text-white">replay<span class="bg-gradient-to-r from-violet to-lime bg-clip-text text-transparent"> → </span>repair</h1>
+        <h1 class="title-gradient text-4xl font-semibold leading-none tracking-tight">replay → repair</h1>
       </div>
       <button
         @click="generate()"
