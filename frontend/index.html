@@ -262,8 +262,25 @@
               throw new Error("unexpected status " + res.status);
             }
             const data = await res.json();
+            // Reconcile into the existing objects in place: reuse each still-present
+            // issue and patch only the fields that changed. Alpine skips effects for
+            // unchanged reactive values, so unchanged text nodes are never rewritten
+            // and any text the user has selected inside a card survives the poll.
+            const existing = new Map(this.issues.map((issue) => [issue.workflowId, issue]));
+            const reconciled = data.map((incoming) => {
+              const current = existing.get(incoming.workflowId);
+              if (!current) {
+                return incoming;
+              }
+              for (const key of Object.keys(incoming)) {
+                if (current[key] !== incoming[key]) {
+                  current[key] = incoming[key];
+                }
+              }
+              return current;
+            });
             // Most recent first; entries with no timestamp sink to the bottom.
-            this.issues = data.sort((a, b) => this.receivedTime(b) - this.receivedTime(a));
+            this.issues = reconciled.sort((a, b) => this.receivedTime(b) - this.receivedTime(a));
             this.reachable = true;
           } catch (e) {
             this.reachable = false;
