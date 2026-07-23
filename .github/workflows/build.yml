@@ -3,8 +3,26 @@ name: Build
 on:
   push:
     branches: [main]
+    # Skip CI when a commit touches only docs or UI: none of these paths feed
+    # the backend/worker Maven build, so building them would waste a run.
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - frontend/**
+      - gateway/**
+      - LICENSE
+      - .gitignore
   pull_request:
     branches: [main]
+    # Same rationale as the push trigger above.
+    paths-ignore:
+      - '**.md'
+      - .claude/**
+      - frontend/**
+      - gateway/**
+      - LICENSE
+      - .gitignore
+  # No path filter here: manual runs must always work.
   workflow_dispatch:
 
 # Cancel superseded runs on the same ref (e.g. new pushes to a PR branch).
