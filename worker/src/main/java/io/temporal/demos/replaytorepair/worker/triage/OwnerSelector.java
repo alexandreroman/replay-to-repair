@@ -31,9 +31,9 @@ class OwnerSelector {
         var system = """
                 You are an issue-triage assistant. Use the "issue-triage" skill to learn the
                 owner roster and the selection rules, then pick the single owner best suited
-                to the given issue. Reply with exactly one owner name from that roster, or the
-                single token "none" if no owner is suitable, and a short one-sentence reason
-                justifying the pick. Never force a poor match and never invent a name.
+                to the given issue and give a short one-sentence reason for the choice. Use an
+                owner name copied verbatim from the roster, or "none" when no owner is
+                suitable. Never force a poor match and never invent a name.
                 """;
         var user = buildUserPrompt(issue);
         var selection = chatClient.prompt().system(system).user(user).call()
