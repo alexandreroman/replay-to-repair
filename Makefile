@@ -10,18 +10,6 @@ include .env
 export
 endif
 
-# Local overrides, loaded only for dev/run targets so that
-# deploy/release targets see the canonical .env values only.
-# Sequential include means later assignments win.
-DEV_TARGETS := dev app-up test
-GOALS := $(or $(MAKECMDGOALS),$(.DEFAULT_GOAL))
-ifneq (,$(filter $(DEV_TARGETS),$(GOALS)))
-ifneq (,$(wildcard .env.local))
-include .env.local
-export
-endif
-endif
-
 # Container tooling, auto-detected with no user action: Docker is preferred,
 # Podman is the fallback. Override with `make COMPOSE="..."` if needed.
 COMPOSE ?= $(shell \
@@ -81,7 +69,7 @@ endef
 ##@ Run
 
 # The worker always runs locally (never containerized) so it can be rebuilt and
-# redeployed fast during the demo. It needs ANTHROPIC_API_KEY (from .env.local).
+# redeployed fast during the demo. It needs ANTHROPIC_API_KEY (from .env).
 # Both targets run local processes in the foreground; the trap reaps the whole
 # process group on Ctrl-C or crash, and any process tearing down takes the rest.
 

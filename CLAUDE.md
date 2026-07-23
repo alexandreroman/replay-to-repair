@@ -23,7 +23,7 @@ make test      # test both Maven modules
 
 The **worker always runs locally** in both modes. `make app-up` and `make dev`
 run local processes in the foreground and need `ANTHROPIC_API_KEY` in
-`.env.local` (git-ignored). In `dev`, the local backend listens on `8081` and
+`.env` (git-ignored). In `dev`, the local backend listens on `8081` and
 the containerized gateway proxies to it via `host.containers.internal`.
 
 ## Ports
