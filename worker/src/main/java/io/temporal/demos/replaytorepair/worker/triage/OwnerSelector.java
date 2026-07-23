@@ -52,7 +52,8 @@ class OwnerSelector {
     // matched against known names here. This component stays Temporal-agnostic: a blank answer is a
     // malformed reply and throws, while the "none" token is the deliberate no-suitable-owner verdict
     // and yields an empty Optional. It is the Activity that turns that empty result into Temporal's
-    // non-retryable failure.
+    // non-retryable failure. The reason is best-effort: it is requested from the model but tolerated
+    // as absent, so a null or blank reason is normalized to null rather than treated as an error.
     private static Optional<OwnerAssignment> resolveOwner(OwnerSelection selection) {
         var candidate = selection.owner() == null ? "" : selection.owner().trim();
         if (candidate.isEmpty()) {
@@ -61,7 +62,11 @@ class OwnerSelector {
         if (candidate.equalsIgnoreCase(NO_SUITABLE_OWNER)) {
             return Optional.empty();
         }
-        return Optional.of(new OwnerAssignment(candidate, selection.reason()));
+        var reason = selection.reason() == null ? null : selection.reason().trim();
+        if (reason != null && reason.isEmpty()) {
+            reason = null;
+        }
+        return Optional.of(new OwnerAssignment(candidate, reason));
     }
 
     /**

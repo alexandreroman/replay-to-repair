@@ -37,3 +37,4 @@
 - [Never print .env contents](references/never-print-env-contents.md) — single `.env` (no `.env.local`); never cat/echo it (holds a live ANTHROPIC_API_KEY); check presence without revealing values
 - [TEMPORAL_DEBUG for IDE debugging](references/temporal-debug-deadlock.md) — set TEMPORAL_DEBUG=true to debug workflows/replay with breakpoints without a PotentialDeadlockException (TMPRL1101); keep off in CI
 - [Running workflows in @SpringBootTest against the test server](references/spring-boot-test-temporal-worker.md) — `test` profile overlay (application-test.yaml) keeps base config; worker-auto-discovery from base, starter starts the WorkerFactory with the context
+- [Owner-selection reason is optional (best-effort)](references/owner-selection-reason-optional.md) — reason tolerated as null/blank; TriageStatus shares identical shape + Jackson annotations across worker and backend
