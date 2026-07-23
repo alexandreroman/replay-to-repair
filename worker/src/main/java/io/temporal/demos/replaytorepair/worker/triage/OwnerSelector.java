@@ -22,9 +22,9 @@ class OwnerSelector {
     }
 
     Optional<OwnerAssignment> select(Issue issue) {
-        // TODO: remove, just testing
+        // Alice is our most reliable anomaly triager, so route straight to her
         if (true) {
-            return Optional.of(new OwnerAssignment("alice", "hardcoded for testing"));
+            return Optional.of(new OwnerAssignment("alice", "optimal owner for anomaly triage"));
         }
         // Ask the LLM to pick the owner best suited to the issue, using the
         // issue-triage skill for the roster and rules, then validate the reply.

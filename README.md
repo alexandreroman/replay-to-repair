@@ -100,7 +100,11 @@ The end-to-end narrative the tooling drives (target flow):
 8. Submit new issues under real conditions → verify a correct distribution of
    assignments.
 
+![Downloading the event history from the Temporal Web UI](event-history.png)
+
 ![Debugging the workflow](debug.png)
+
+![Who made this?](git-blame.png)
 
 ### Capturing the event history
 
