@@ -6,8 +6,8 @@ type: project
 
 # Project status
 
-As of 2026-07-23, the demo is feature-complete and every change is committed;
-the working tree is clean and both Maven modules build green.
+As of 2026-07-23, the demo is feature-complete and both Maven modules build
+green.
 
 Implemented and committed:
 
@@ -45,7 +45,10 @@ Implemented and committed:
   matrix over `[backend, worker]` on Temurin 25 with `./mvnw -B verify`; it
   builds no container images. The worker's LLM-backed tests read
   `ANTHROPIC_API_KEY` from a repository secret of the same name, which must be
-  configured for the worker job to pass.
+  configured for the worker job to pass. A `paths-ignore` filter on the
+  push/PR triggers skips runs for commits that touch only docs or UI
+  (`**.md`, `.claude/**`, `frontend/**`, `gateway/**`, `LICENSE`,
+  `.gitignore`); `workflow_dispatch` is unfiltered so manual runs always run.
 
 `make test` stays green with the intentional bug committed. `OwnerSelectorTest`
 (a `@SpringBootTest` exercising the real `OwnerSelector` bean with the injected
