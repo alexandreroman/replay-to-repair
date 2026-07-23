@@ -14,6 +14,7 @@ import io.temporal.spring.boot.ActivityImpl;
 public class TriageActivitiesImpl implements TriageActivities {
     private static final Logger LOGGER = LoggerFactory.getLogger(TriageActivitiesImpl.class);
     private static final Duration NOTIFY_DELAY = Duration.ofSeconds(2);
+    private static final Duration TICKET_UPDATE_DELAY = Duration.ofSeconds(2);
 
     private final OwnerSelector ownerSelector;
 
@@ -39,6 +40,32 @@ public class TriageActivitiesImpl implements TriageActivities {
                 .addKeyValue("reason", assignment.reason())
                 .log("triage.owner.selected");
         return assignment;
+    }
+
+    @Override
+    public void updateTicket(Issue issue, String owner) {
+        // The ticket already exists in the ticketing system; here we only record the assigned owner on
+        // it.
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("owner", owner)
+                .log("triage.ticket.updating");
+        // Simulate work so the "Owner assigned" step stays visible in the dashboard while the frontend
+        // polls. Blocking is fine here: this is Activity code, not the Workflow, so a real Thread.sleep
+        // is correct (never use it in workflow code).
+        try {
+            Thread.sleep(TICKET_UPDATE_DELAY);
+        } catch (InterruptedException e) {
+            // Restore the interrupt flag and fail so Temporal can retry the activity.
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while updating the ticket", e);
+        }
+        // No external call in the demo: logging is enough to show the ticket was updated.
+        LOGGER.atInfo()
+                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("owner", owner)
+                .log("triage.ticket.updated");
     }
 
     @Override

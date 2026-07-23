@@ -25,6 +25,7 @@
 - [List triage workflows by WorkflowType server-side](references/list-triage-workflows-by-workflowtype.md) — filter server-side via the default WorkflowType search attribute; avoid custom search attributes
 - [Demo design constraints](references/demo-design-constraints.md) — bug lives in the Activity, Workflow stays linear; no-owner (`none` token) fails it non-retryably (NoSuitableOwner); neutral "owner" vocabulary
 - [Code style conventions](references/code-style-conventions.md) — 80 cols text / 120 code; latest stable deps (verify via context7); no blank line after a class declaration; present-tense code comments, no history narration
+- [Interface Javadoc states the contract only](references/interface-javadoc-contract-only.md) — interface method Javadoc describes the caller-facing contract, never implementation or demo details
 - [Project status](references/project-status.md) — implementation progress and the next step (single place tracking done vs. remaining)
 - [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
 - [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String
