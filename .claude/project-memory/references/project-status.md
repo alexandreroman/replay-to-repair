@@ -11,8 +11,11 @@ green.
 
 Implemented and committed:
 
-- `IssueTriageWorkflow` + `TriageActivities` (`selectOwner`/`notifyAssignment`
-  regular). Owner selection is delegated to a Temporal-agnostic `OwnerSelector`
+- `IssueTriageWorkflow` + `TriageActivities` (`selectOwner`/`updateTicket`/
+  `notifyAssignment` regular). `updateTicket` runs within the `OWNER_SELECTED`
+  step (no new `Step` enum value): it records the assigned owner on the issue's
+  existing ticket and simulates a ~2s ticketing-system call. Owner selection is
+  delegated to a Temporal-agnostic `OwnerSelector`
   component that returns `Optional<OwnerAssignment>` (the chosen owner and a
   short reason for the pick) and holds the intentional
   `if (true) { return Optional.of(new OwnerAssignment("alice", "hardcoded for testing")); }`
