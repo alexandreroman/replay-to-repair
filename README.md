@@ -102,6 +102,8 @@ The end-to-end narrative the tooling drives (target flow):
 
 ![Debugging the workflow](debug.png)
 
+![Who made this?](git-blame.png)
+
 ### Capturing the event history
 
 With the app running and at least one issue triaged, the quickest route is:
