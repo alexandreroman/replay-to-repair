@@ -38,6 +38,11 @@ Implemented and committed:
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
   `NoSuitableOwner` failure), rather than the neutral "received" placeholder.
+  `IssueView` carries a `workflowUrl` field: a same-origin Temporal Web UI
+  deep-link (`/temporal/namespaces/{namespace}/workflows/{workflowId}/{runId}/history`)
+  built server-side with the namespace read from the client, so the frontend
+  hardcodes nothing. Each card title is an anchor to that link, styled to render
+  identically until hover (underline on hover only).
 - Temporal Web UI proxied at `/temporal`.
 - A committed event-history fixture
   (`worker/src/test/resources/history/issue-triage.json`) and a single
