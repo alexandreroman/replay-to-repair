@@ -179,7 +179,13 @@
               >
                 <span class="icon icon-bug h-4 w-4"></span>
               </span>
-              <span x-text="issue.issueTitle"></span>
+              <a
+                :href="issue.workflowUrl"
+                target="_blank"
+                rel="noopener"
+                class="text-white no-underline hover:underline"
+                x-text="issue.issueTitle"
+              ></a>
             </h3>
             <template x-if="issue.assignedOwner">
               <span class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-lime/30 bg-lime/10 px-2.5 py-1 font-mono text-xs text-lime">
