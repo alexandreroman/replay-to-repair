@@ -22,7 +22,7 @@ public class TriageActivitiesImpl implements TriageActivities {
     }
 
     @Override
-    public String selectOwner(Issue issue) {
+    public OwnerAssignment selectOwner(Issue issue) {
         // The wrapper owns both logs, so it always writes "selecting" then "selected" around the
         // owner returned by the delegated selection.
         LOGGER.atInfo()
@@ -31,13 +31,14 @@ public class TriageActivitiesImpl implements TriageActivities {
         // An empty selection is the deliberate no-suitable-owner verdict: the component stays
         // Temporal-agnostic and it is raised here as a non-retryable NoSuitableOwner failure that
         // terminates the workflow in error.
-        var owner = ownerSelector.select(issue).orElseThrow(() -> ApplicationFailure.newNonRetryableFailure(
+        var assignment = ownerSelector.select(issue).orElseThrow(() -> ApplicationFailure.newNonRetryableFailure(
                 "No suitable owner in the roster for this issue", "NoSuitableOwner"));
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
-                .addKeyValue("owner", owner)
+                .addKeyValue("owner", assignment.owner())
+                .addKeyValue("reason", assignment.reason())
                 .log("triage.owner.selected");
-        return owner;
+        return assignment;
     }
 
     @Override

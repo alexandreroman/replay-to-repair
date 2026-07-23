@@ -2,19 +2,25 @@ package io.temporal.demos.replaytorepair.backend.triage;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Snapshot of a triage workflow's progress.
  *
- * <p>Part of the contract shared with the worker module. The shape must stay identical in both
- * modules so the same value is returned by both the live {@code getStatus()} query and the final
- * {@code triage()} result, and round-trips through the default Temporal {@code DataConverter}
- * (Jackson JSON).
+ * <p>Part of the contract shared with the worker module. The shape and Jackson annotations must stay
+ * identical in both modules so the same value is returned by both the live {@code getStatus()} query
+ * and the final {@code triage()} result, and round-trips through the default Temporal
+ * {@code DataConverter} (Jackson JSON).
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record TriageStatus(
         String issueId,
         String issueTitle,
         Step currentStep,
         String assignedOwner,
+        String assignmentReason,
         Instant receivedAt
 ) {
     public enum Step {

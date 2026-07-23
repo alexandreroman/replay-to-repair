@@ -13,15 +13,24 @@ Implemented and committed:
 
 - `IssueTriageWorkflow` + `TriageActivities` (`selectOwner`/`notifyAssignment`
   regular). Owner selection is delegated to a Temporal-agnostic `OwnerSelector`
-  component that returns `Optional<String>` and holds the intentional
-  `if (true) { return Optional.of("alice"); }` bug; `TriageActivitiesImpl`
-  raises the non-retryable `NoSuitableOwner` failure when the result is empty.
+  component that returns `Optional<OwnerAssignment>` (the chosen owner and a
+  short reason for the pick) and holds the intentional
+  `if (true) { return Optional.of(new OwnerAssignment("alice", "hardcoded for testing")); }`
+  bug. The `selectOwner` Activity returns that `OwnerAssignment`;
+  `TriageActivitiesImpl` raises the non-retryable `NoSuitableOwner` failure when
+  the selection is empty. The workflow stores the reason at the workflow level in
+  `TriageStatus.assignmentReason` (worker and backend copies identical); the
+  reason is deliberately not surfaced by the REST API (`IssueView`) or the
+  dashboard.
 - Owner-selection roster and rules loaded via `SkillsTool` from a single
-  `SKILL.md` (see [[skills-tool-owner-roster]]). The skill returns the `none`
-  token when no owner fits; `OwnerSelector` maps it to an empty `Optional` and
+  `SKILL.md` (see [[skills-tool-owner-roster]]). The skill's output contract
+  covers the chosen owner (or the `none` token when no owner fits) plus a
+  one-sentence reason; `OwnerSelector` maps `none` to an empty `Optional` and
   `TriageActivitiesImpl` raises a non-retryable `NoSuitableOwner` failure that
   terminates the workflow, and the activity retry policy is bounded (see
-  [[demo-design-constraints]]).
+  [[demo-design-constraints]]). The `OwnerSelection` reply is parsed defensively
+  with Jackson: unknown fields are ignored, property names are explicit, and
+  common key variants map via aliases.
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the

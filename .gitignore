@@ -6,9 +6,8 @@ target/
 histories/
 *.history.json
 
-# Local environment overrides
+# Local environment override
 .env
-.env.local
 
 # IDE
 .idea/

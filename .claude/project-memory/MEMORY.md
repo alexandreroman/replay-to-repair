@@ -34,6 +34,7 @@
 - [Roster specialties are mutually disjoint](references/roster-disjoint-specialties.md) — each problem area maps to one owner; alice owns backend/API/relational-DB, erin only analytics/ML
 - [IssueGenerator dataset is balanced across owners](references/issue-generator-owner-balance.md) — ~6 issues per owner incl. erin analytics/ML; next() stays a uniform random pick
 - [README must not mention Casper](references/readme-no-casper.md) — keep Casper out of the public README; Casper port-remap docs live in CLAUDE.md only
-- [Never print .env contents](references/never-print-env-contents.md) — never cat/echo `.env`/`.env.local`; they hold a live ANTHROPIC_API_KEY; check presence without revealing values
+- [Never print .env contents](references/never-print-env-contents.md) — single `.env` (no `.env.local`); never cat/echo it (holds a live ANTHROPIC_API_KEY); check presence without revealing values
 - [TEMPORAL_DEBUG for IDE debugging](references/temporal-debug-deadlock.md) — set TEMPORAL_DEBUG=true to debug workflows/replay with breakpoints without a PotentialDeadlockException (TMPRL1101); keep off in CI
 - [Running workflows in @SpringBootTest against the test server](references/spring-boot-test-temporal-worker.md) — `test` profile overlay (application-test.yaml) keeps base config; worker-auto-discovery from base, starter starts the WorkerFactory with the context
+- [Owner-selection reason is optional (best-effort)](references/owner-selection-reason-optional.md) — reason tolerated as null/blank; TriageStatus shares identical shape + Jackson annotations across worker and backend

@@ -26,19 +26,21 @@ Follow this procedure in order:
 
 ## Output contract
 
-Your reply MUST be EXACTLY one of these two tokens, and nothing else:
+Your reply has two parts:
 
-- The name of the selected owner, copied verbatim from the roster below.
-- The literal lowercase token `none`, when step 4 applies and no roster owner
-  is suitable.
+- The chosen owner: the name of the selected owner, copied verbatim from the
+  roster below, or the literal lowercase token `none` when step 4 applies and
+  no roster owner is suitable.
+- A reason: a short, single-sentence justification for that choice. For a
+  selected owner, reference the specialty or preference that matched the issue.
+  For `none`, explain briefly why no owner's specialties cover the issue.
 
 Rules for the reply:
 
-- Output ONLY that single token — no punctuation, no explanation, no quotes,
-  no surrounding text, no leading or trailing characters.
 - Never invent a name and never return an owner who is not in the roster.
 - `none` is the ONLY accepted way to signal that no roster owner fits. Never
-  use any other word, phrase, or empty reply for this.
+  use any other word, phrase, or empty value for the chosen owner.
+- Keep the reason to a single, concise sentence.
 
 ## Owners
 

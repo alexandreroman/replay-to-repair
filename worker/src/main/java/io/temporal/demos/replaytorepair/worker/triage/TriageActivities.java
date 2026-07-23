@@ -5,10 +5,10 @@ import io.temporal.activity.ActivityInterface;
 @ActivityInterface
 public interface TriageActivities {
     /**
-     * Returns the selected owner name for the issue. When no roster owner is suitable, this fails with a
+     * Returns the selected owner and the reason for the choice. When no roster owner is suitable, this fails with a
      * non-retryable error of type {@code NoSuitableOwner}, which terminates the workflow in error.
      */
-    String selectOwner(Issue issue);
+    OwnerAssignment selectOwner(Issue issue);
 
     /**
      * Notifies the assigned owner that the issue is theirs. This demo sends no real external notification: it logs the

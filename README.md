@@ -37,7 +37,7 @@ becomes straightforward — and it ships to production faster.
 
 ```bash
 # 1. Provide your Anthropic API key (git-ignored)
-echo 'ANTHROPIC_API_KEY=your-api-key' > .env.local
+echo 'ANTHROPIC_API_KEY=your-api-key' > .env
 
 # 2. Launch the app (Ctrl-C to stop the local processes)
 make app-up
@@ -165,8 +165,8 @@ make build       # build the production JARs for both modules
 | `TEMPORAL_NAMESPACE`| Temporal namespace                   | `default`        |
 | `PORT`              | Backend HTTP port                    | `8080`           |
 
-Put local values in `.env.local` (git-ignored); `make` loads it automatically
-for dev and test targets.
+Put local values, including secrets, in `.env` (git-ignored); `make` loads it
+automatically.
 
 ## Architecture
 
