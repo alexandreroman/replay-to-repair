@@ -11,6 +11,12 @@ public interface TriageActivities {
     OwnerAssignment selectOwner(Issue issue);
 
     /**
+     * Records the assigned owner on the issue's existing ticket in the ticketing system. Updates the existing ticket;
+     * it does not create one.
+     */
+    void updateTicket(Issue issue, String owner);
+
+    /**
      * Notifies the assigned owner that the issue is theirs. This demo sends no real external notification: it logs the
      * assignment and pauses briefly so the NOTIFYING step stays visible on the dashboard while the frontend polls.
      */

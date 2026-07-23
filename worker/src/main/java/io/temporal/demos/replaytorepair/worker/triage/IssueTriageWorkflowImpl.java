@@ -58,6 +58,10 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
                 .addKeyValue("reason", reason)
                 .log("triage.owner.assigned");
 
+        // Update the existing ticket in the ticketing system with the assigned owner. This runs within
+        // the OWNER_SELECTED step, keeping it visible while the ticket is updated.
+        activities.updateTicket(issue, owner);
+
         currentStatus = statusAt(issue, receivedAt, Step.NOTIFYING, owner, reason);
         activities.notifyAssignment(issue, owner);
         currentStatus = statusAt(issue, receivedAt, Step.DONE, owner, reason);
