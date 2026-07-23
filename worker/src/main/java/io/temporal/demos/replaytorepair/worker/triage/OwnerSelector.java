@@ -37,7 +37,7 @@ class OwnerSelector {
                 """;
         var user = buildUserPrompt(issue);
         var selection = chatClient.prompt().system(system).user(user).call()
-                .entity(OwnerSelection.class, spec -> spec.useProviderStructuredOutput());
+                .entity(OwnerSelection.class, ChatClient.EntityParamSpec::useProviderStructuredOutput);
         return resolveOwner(selection);
     }
 
