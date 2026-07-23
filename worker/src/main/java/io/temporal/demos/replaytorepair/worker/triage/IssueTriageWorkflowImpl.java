@@ -41,23 +41,26 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         // Never use Instant.now() inside workflow code: derive the timestamp from the deterministic
         // workflow clock and keep it fixed for the whole execution.
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
-        currentStatus = statusAt(issue, receivedAt, Step.ISSUE_RECEIVED, null);
+        currentStatus = statusAt(issue, receivedAt, Step.ISSUE_RECEIVED, null, null);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
                 .log("triage.issue.received");
 
-        currentStatus = statusAt(issue, receivedAt, Step.AI_ANALYSIS, null);
-        var owner = activities.selectOwner(issue);
-        currentStatus = statusAt(issue, receivedAt, Step.OWNER_SELECTED, owner);
+        currentStatus = statusAt(issue, receivedAt, Step.AI_ANALYSIS, null, null);
+        var assignment = activities.selectOwner(issue);
+        var owner = assignment.owner();
+        var reason = assignment.reason();
+        currentStatus = statusAt(issue, receivedAt, Step.OWNER_SELECTED, owner, reason);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
+                .addKeyValue("reason", reason)
                 .log("triage.owner.assigned");
 
-        currentStatus = statusAt(issue, receivedAt, Step.NOTIFYING, owner);
+        currentStatus = statusAt(issue, receivedAt, Step.NOTIFYING, owner, reason);
         activities.notifyAssignment(issue, owner);
-        currentStatus = statusAt(issue, receivedAt, Step.DONE, owner);
+        currentStatus = statusAt(issue, receivedAt, Step.DONE, owner, reason);
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
@@ -70,7 +73,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         return currentStatus;
     }
 
-    private static TriageStatus statusAt(Issue issue, Instant receivedAt, Step step, String owner) {
-        return new TriageStatus(issue.id(), issue.title(), step, owner, receivedAt);
+    private static TriageStatus statusAt(Issue issue, Instant receivedAt, Step step, String owner, String reason) {
+        return new TriageStatus(issue.id(), issue.title(), step, owner, reason, receivedAt);
     }
 }

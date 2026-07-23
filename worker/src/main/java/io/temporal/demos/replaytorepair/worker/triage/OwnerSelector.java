@@ -2,6 +2,10 @@ package io.temporal.demos.replaytorepair.worker.triage;
 
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Component;
 
@@ -17,10 +21,10 @@ class OwnerSelector {
         this.chatClient = chatClient;
     }
 
-    Optional<String> select(Issue issue) {
+    Optional<OwnerAssignment> select(Issue issue) {
         // TODO: remove, just testing
         if (true) {
-            return Optional.of("alice");
+            return Optional.of(new OwnerAssignment("alice", "hardcoded for testing"));
         }
         // Ask the LLM to pick the owner best suited to the issue, using the
         // issue-triage skill for the roster and rules, then validate the reply.
@@ -28,13 +32,13 @@ class OwnerSelector {
                 You are an issue-triage assistant. Use the "issue-triage" skill to learn the
                 owner roster and the selection rules, then pick the single owner best suited
                 to the given issue. Reply with exactly one owner name from that roster, or the
-                single token "none" if no owner is suitable. Never force a poor match and never
-                invent a name.
+                single token "none" if no owner is suitable, and a short one-sentence reason
+                justifying the pick. Never force a poor match and never invent a name.
                 """;
         var user = buildUserPrompt(issue);
         var selection = chatClient.prompt().system(system).user(user).call()
                 .entity(OwnerSelection.class, spec -> spec.useProviderStructuredOutput());
-        return resolveOwner(selection.owner());
+        return resolveOwner(selection);
     }
 
     private static String buildUserPrompt(Issue issue) {
@@ -49,21 +53,29 @@ class OwnerSelector {
     // malformed reply and throws, while the "none" token is the deliberate no-suitable-owner verdict
     // and yields an empty Optional. It is the Activity that turns that empty result into Temporal's
     // non-retryable failure.
-    private static Optional<String> resolveOwner(String answer) {
-        var candidate = answer == null ? "" : answer.trim();
+    private static Optional<OwnerAssignment> resolveOwner(OwnerSelection selection) {
+        var candidate = selection.owner() == null ? "" : selection.owner().trim();
         if (candidate.isEmpty()) {
             throw new IllegalStateException("LLM returned a blank owner");
         }
         if (candidate.equalsIgnoreCase(NO_SUITABLE_OWNER)) {
             return Optional.empty();
         }
-        return Optional.of(candidate);
+        return Optional.of(new OwnerAssignment(candidate, selection.reason()));
     }
 
     /**
-     * Structured result of the owner-selection call: the JSON schema is enforced provider-side as an
-     * API-level constraint, not via prompt instructions.
+     * Structured result of the owner-selection call: both the owner and the reason are enforced
+     * provider-side as an API-level constraint, not via prompt instructions.
+     *
+     * <p>Parsing is defensive: unknown fields the model volunteers (e.g. a confidence score) are
+     * ignored, field names bind explicitly without relying on the {@code -parameters} compiler flag,
+     * and common LLM key variants (e.g. {@code assignee}, {@code justification}) map to the canonical
+     * components.
      */
-    record OwnerSelection(String owner) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record OwnerSelection(
+            @JsonProperty("owner") @JsonAlias({"assignee", "name"}) String owner,
+            @JsonProperty("reason") @JsonAlias({"justification", "explanation", "rationale"}) String reason) {
     }
 }

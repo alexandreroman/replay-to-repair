@@ -45,6 +45,7 @@ class IssueTriageWorkflowTest {
         TriageStatus result = workflow.triage(issue);
 
         assertThat(result.assignedOwner()).isEqualTo("alice");
+        assertThat(result.assignmentReason()).isNotBlank();
         assertThat(result.currentStep()).isEqualTo(TriageStatus.Step.DONE);
     }
 }

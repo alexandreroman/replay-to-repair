@@ -15,6 +15,7 @@ public record TriageStatus(
         String issueTitle,
         Step currentStep,
         String assignedOwner,
+        String assignmentReason,
         Instant receivedAt
 ) {
     public enum Step {

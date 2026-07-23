@@ -44,6 +44,6 @@ class OwnerSelectorTest {
     @ParameterizedTest
     @MethodSource("backendIssues")
     void assignsBackendIssuesToAlice(Issue issue) {
-        assertThat(ownerSelector.select(issue)).hasValue("alice");
+        assertThat(ownerSelector.select(issue).map(OwnerAssignment::owner)).hasValue("alice");
     }
 }
