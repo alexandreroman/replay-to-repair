@@ -16,7 +16,9 @@ through the real run in your IDE debugger, pinpoint the bug, fix it, and
 redeploy the worker under real conditions.
 
 The scenario: an AI triage agent assigns incoming issues to developers
-("owners") based on their specialties. In production, every recent issue lands
+("owners") based on their specialties. The triage and owner selection are
+driven by a **skill** — a `SKILL.md` file holding the owner roster and routing
+rules, which the agent loads as a tool. In production, every recent issue lands
 on the same owner. The root cause is a debug line accidentally committed in the
 owner-selection Activity — an early return that short-circuits the LLM call.
 Once the source of the failure is pinpointed in the **Activity**, the fix
@@ -167,7 +169,6 @@ make build       # build the production JARs for both modules
 | `ANTHROPIC_MODEL`   | Claude model used for owner triage   | `claude-sonnet-5`|
 | `TEMPORAL_ADDRESS`  | Temporal gRPC endpoint               | `localhost:7233` |
 | `TEMPORAL_NAMESPACE`| Temporal namespace                   | `default`        |
-| `PORT`              | Backend HTTP port                    | `8080`           |
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it
 automatically.
