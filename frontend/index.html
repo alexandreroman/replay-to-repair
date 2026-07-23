@@ -65,6 +65,22 @@
     }
     .animate-owner-in { animation: owner-in 450ms ease-out; }
     @media (prefers-reduced-motion: reduce) { .animate-owner-in { animation: none; } }
+    /* The active step's pill fills left-to-right in violet over the faint track,
+       then pulses to signal work in progress. A completed step is the static
+       `done` state (plain bg-lime, no animation), and the next pill starts its
+       own fill. Alpine swaps the class once per transition, so each fill plays a
+       single time. */
+    @keyframes segment-fill { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+    @keyframes segment-pulse { 50% { opacity: 0.5; } }
+    .segment-active {
+      background-color: rgba(255, 255, 255, 0.1);
+      background-image: linear-gradient(90deg, #8B5CF6, #8B5CF6);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      animation: segment-fill 450ms ease-out,
+                 segment-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 450ms infinite;
+    }
+    @media (prefers-reduced-motion: reduce) { .segment-active { animation: none; } }
     /* Focus state for the generate button: a conic-gradient that rotates around
        the border. The mask keeps the gradient to a 2px ring; @property makes the
        angle animatable so it can spin. */
@@ -118,6 +134,12 @@
     <p
       x-show="!reachable"
       x-cloak
+      x-transition:enter="transition duration-300 ease-out"
+      x-transition:enter-start="opacity-0 -translate-y-2"
+      x-transition:enter-end="opacity-100 translate-y-0"
+      x-transition:leave="transition duration-200 ease-in"
+      x-transition:leave-start="opacity-100 translate-y-0"
+      x-transition:leave-end="opacity-0 -translate-y-2"
       class="mb-6 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 font-mono text-xs text-amber-300"
     >
       Backend unreachable — retrying…
@@ -294,7 +316,7 @@
           return {
             failed: "bg-red-500/70",
             done: "bg-lime",
-            active: "bg-violet animate-pulse",
+            active: "segment-active",
             pending: "bg-white/10",
           }[this.stepState(issue, step)];
         },
