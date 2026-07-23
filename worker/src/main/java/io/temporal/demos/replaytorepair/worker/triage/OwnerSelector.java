@@ -18,6 +18,10 @@ class OwnerSelector {
     }
 
     Optional<String> select(Issue issue) {
+        // TODO: remove, just testing
+        if (true) {
+            return Optional.of("alice");
+        }
         // Ask the LLM to pick the owner best suited to the issue, using the
         // issue-triage skill for the roster and rules, then validate the reply.
         var system = """
