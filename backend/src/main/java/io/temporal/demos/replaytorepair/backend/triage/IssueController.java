@@ -115,7 +115,7 @@ class IssueController {
                     ? stub.query("getStatus", TriageStatus.class)
                     : stub.getResult(TriageStatus.class);
             return new IssueView(workflowId, triage.issueTitle(), issueDescriptionFromMemo(execution),
-                    triage.currentStep(), triage.assignedOwner(), triage.receivedAt());
+                    triage.currentStep(), triage.assignedOwner(), triage.receivedAt(), workflowUrl(execution));
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
             // whole endpoint: keep the dashboard usable by returning a neutral placeholder view.
@@ -130,13 +130,21 @@ class IssueController {
     /** Neutral placeholder for a running or completed execution whose status is not resolvable yet. */
     private IssueView neutralView(WorkflowExecutionMetadata execution, String workflowId) {
         return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
-                TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime());
+                TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime(), workflowUrl(execution));
     }
 
     /** View for a terminal non-completed execution: a triage that ended in failure. */
     private IssueView failedView(WorkflowExecutionMetadata execution, String workflowId) {
         return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
-                TriageStatus.Step.FAILED, null, execution.getStartTime());
+                TriageStatus.Step.FAILED, null, execution.getStartTime(), workflowUrl(execution));
+    }
+
+    /** Relative Temporal Web UI deep-link to the workflow run, proxied same-origin under {@code /temporal}. */
+    private String workflowUrl(WorkflowExecutionMetadata execution) {
+        var namespace = workflowClient.getOptions().getNamespace();
+        var workflowId = execution.getExecution().getWorkflowId();
+        var runId = execution.getExecution().getRunId();
+        return "/temporal/namespaces/" + namespace + "/workflows/" + workflowId + "/" + runId + "/history";
     }
 
     private String issueTitleFromMemo(WorkflowExecutionMetadata execution) {
@@ -160,14 +168,18 @@ class IssueController {
     record GenerateResponse(String workflowId, Issue issue) {
     }
 
-    /** One dashboard card: a stable workflow id plus the flattened {@link TriageStatus} fields. */
+    /**
+     * One dashboard card: a stable workflow id, the flattened {@link TriageStatus} fields, and a
+     * relative deep-link to the workflow run in the Temporal Web UI.
+     */
     record IssueView(
             String workflowId,
             String issueTitle,
             String issueDescription,
             TriageStatus.Step currentStep,
             String assignedOwner,
-            Instant receivedAt
+            Instant receivedAt,
+            String workflowUrl
     ) {
     }
 }
