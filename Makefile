@@ -110,8 +110,8 @@ app-down: ## Stop and remove the containers
 # at /temporal.
 # All variables are $$-escaped so the shell — not Make — expands them.
 .PHONY: worktree-init
-worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_PORT)
-	@[ -n "$$CASPER_PORT" ] || exit 0; \
+worktree-init: ## Remap host ports for a Casper worktree and pre-compile both modules
+	@if [ -n "$$CASPER_PORT" ]; then \
 		env_file=".env"; \
 		gateway_port=$$CASPER_PORT; \
 		temporal_grpc_port=$$((CASPER_PORT + 1)); \
@@ -127,7 +127,10 @@ worktree-init: ## Remap host ports for a Casper worktree (no-op without CASPER_P
 			echo "DEV_BACKEND_PORT=$$dev_backend_port"; \
 			echo "TEMPORAL_ADDRESS=localhost:$$temporal_grpc_port"; \
 		} >> "$$env_file"; \
-		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port"
+		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port"; \
+	fi
+	cd backend && ./mvnw -B -DskipTests compile
+	cd worker && ./mvnw -B -DskipTests compile
 
 ##@ Replay
 
