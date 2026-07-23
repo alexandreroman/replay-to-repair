@@ -17,8 +17,9 @@ redeploy the worker under real conditions.
 
 The scenario: an AI triage agent assigns incoming issues to developers
 ("owners") based on their specialties. The triage and owner selection are
-driven by a **skill** — a `SKILL.md` file holding the owner roster and routing
-rules, which the agent loads as a tool. In production, every recent issue lands
+driven by a **skill** — a
+[`SKILL.md`](worker/src/main/resources/skills/issue-triage/SKILL.md) file
+holding the owner roster and routing rules, which the agent loads as a tool. In production, every recent issue lands
 on the same owner. The root cause is a debug line accidentally committed in the
 owner-selection Activity — an early return that short-circuits the LLM call.
 Once the source of the failure is pinpointed in the **Activity**, the fix
