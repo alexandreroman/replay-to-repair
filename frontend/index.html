@@ -124,7 +124,7 @@
     </p>
 
     <!-- Owners summary, fully derived from the workflows returned by the API. -->
-    <section x-show="owners().length > 0" x-cloak class="mb-14">
+    <section x-show="owners().length > 0" x-cloak class="mb-8">
       <h2 class="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-500">Owners</h2>
       <div class="flex flex-wrap gap-2.5">
         <template x-for="owner in owners()" :key="owner.name">
