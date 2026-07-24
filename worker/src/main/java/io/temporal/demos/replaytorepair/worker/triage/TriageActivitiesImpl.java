@@ -50,16 +50,9 @@ public class TriageActivitiesImpl implements TriageActivities {
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("owner", owner)
                 .log("triage.ticket.updating");
-        // Simulate work so the "Owner assigned" step stays visible in the dashboard while the frontend
-        // polls. Blocking is fine here: this is Activity code, not the Workflow, so a real Thread.sleep
-        // is correct (never use it in workflow code).
-        try {
-            Thread.sleep(TICKET_UPDATE_DELAY);
-        } catch (InterruptedException e) {
-            // Restore the interrupt flag and fail so Temporal can retry the activity.
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while updating the ticket", e);
-        }
+        // Simulate the ticketing-system call so the "Owner assigned" step stays visible in the
+        // dashboard while the frontend polls.
+        simulateWork(TICKET_UPDATE_DELAY, "Interrupted while updating the ticket");
         // No external call in the demo: logging is enough to show the ticket was updated.
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
@@ -70,21 +63,26 @@ public class TriageActivitiesImpl implements TriageActivities {
 
     @Override
     public void notifyAssignment(Issue issue, String owner) {
-        // Simulate work so the NOTIFYING step stays visible in the dashboard while the frontend
-        // polls. Blocking is fine here: this is Activity code, not the Workflow, so a real
-        // Thread.sleep is correct (never use it in workflow code).
-        try {
-            Thread.sleep(NOTIFY_DELAY);
-        } catch (InterruptedException e) {
-            // Restore the interrupt flag and fail so Temporal can retry the activity.
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while notifying issue assignment", e);
-        }
+        // Simulate the notification so the NOTIFYING step stays visible in the dashboard while the
+        // frontend polls.
+        simulateWork(NOTIFY_DELAY, "Interrupted while notifying issue assignment");
         // No external notification in the demo: logging is enough to show the step ran.
         LOGGER.atInfo()
                 .addKeyValue("issueId", issue.id())
                 .addKeyValue("issueTitle", issue.title())
                 .addKeyValue("owner", owner)
                 .log("triage.assignment.notified");
+    }
+
+    // Block to simulate a slow external call. Blocking is fine here: this is Activity code, not the
+    // Workflow, so a real Thread.sleep is correct (never use it in workflow code).
+    private static void simulateWork(Duration delay, String interruptedMessage) {
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            // Restore the interrupt flag and fail so Temporal can retry the activity.
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(interruptedMessage, e);
+        }
     }
 }

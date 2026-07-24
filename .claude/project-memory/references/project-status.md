@@ -18,7 +18,7 @@ Implemented and committed:
   delegated to a Temporal-agnostic `OwnerSelector`
   component that returns `Optional<OwnerAssignment>` (the chosen owner and a
   short reason for the pick) and holds the intentional
-  `if (true) { return Optional.of(new OwnerAssignment("alice", "hardcoded for testing")); }`
+  `if (true) { return Optional.of(new OwnerAssignment("alice", "optimal owner for anomaly triage")); }`
   bug. The `selectOwner` Activity returns that `OwnerAssignment`;
   `TriageActivitiesImpl` raises the non-retryable `NoSuitableOwner` failure when
   the selection is empty. The workflow stores the reason at the workflow level in
