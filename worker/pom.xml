@@ -17,7 +17,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <temporal.version>1.30.1</temporal.version>
+        <temporal.version>1.37.0</temporal.version>
         <spring-ai.version>2.0.0</spring-ai.version>
         <spring-ai-agent-utils.version>0.10.0</spring-ai-agent-utils.version>
     </properties>
