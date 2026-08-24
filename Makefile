@@ -38,6 +38,11 @@ DEV_BACKEND_PORT ?= 8081
 # .env (above) wins; this is only the fallback for a plain checkout.
 GATEWAY_PORT ?= 8080
 
+# Temporal gRPC port, used in the CLI hint published to the Casper info panel.
+# Conditional for the same reason: a value imported from .env (a Casper
+# worktree) wins; this is only the fallback for a plain checkout.
+TEMPORAL_GRPC_PORT ?= 7233
+
 # Event-history fixture that IssueTriageWorkflowReplayTest reads and that
 # `make capture-history` writes.
 REPLAY_FIXTURE := worker/src/test/resources/history/issue-triage.json
@@ -55,6 +60,7 @@ infra-up: ## Start Temporal + gateway in containers
 .PHONY: infra-down
 infra-down: ## Stop Temporal + gateway
 	$(COMPOSE) stop temporal gateway
+	$(casper_info_clear)
 
 # Print the demo's useful URLs. The gateway serves the dashboard and proxies
 # /api/* to the backend and /temporal to the Temporal Web UI.
@@ -64,6 +70,49 @@ define show_urls
 	@echo "Open:"
 	@echo "  Dashboard         http://localhost:$(GATEWAY_PORT)"
 	@echo "  Temporal Web UI   http://localhost:$(GATEWAY_PORT)/temporal"
+endef
+
+# Same endpoints, published to the Casper info panel so they stay reachable once
+# the logs have scrolled past. Skipped when not running inside a Casper
+# workspace, or when the casper CLI is unavailable. $(1) names the run mode,
+# $(2) is an optional closing note, omitted when empty (no commas in either:
+# $(call) would read them as further arguments).
+# mktemp only substitutes trailing Xs on BSD/macOS, hence the rename to get a
+# .md suffix, which the panel needs to render the file as Markdown.
+define casper_info
+	@if [ -n "$$CASPER_WORKSPACE_ID" ] && command -v casper >/dev/null 2>&1; then \
+		info_file="$$(mktemp -t casper-info)"; \
+		mv "$$info_file" "$$info_file.md"; \
+		info_file="$$info_file.md"; \
+		printf '%s\n' \
+			'# Replay-to-Repair' \
+			'' \
+			'> **$(1)**' \
+			'' \
+			'## Endpoints' \
+			'' \
+			'| Endpoint | URL |' \
+			'| --- | --- |' \
+			'| Dashboard | <http://localhost:$(GATEWAY_PORT)> |' \
+			'| Temporal Web UI | <http://localhost:$(GATEWAY_PORT)/temporal> |' \
+			'' \
+			'## Temporal CLI' \
+			'' \
+			'```' \
+			'temporal --address localhost:$(TEMPORAL_GRPC_PORT) workflow list' \
+			'```' \
+			$(if $(strip $(2)),'' '$(2)',) \
+			> "$$info_file"; \
+		casper info set --file "$$info_file" >/dev/null 2>&1 || true; \
+		rm -f "$$info_file"; \
+	fi
+endef
+
+# Drop the endpoint list once the app it describes is gone.
+define casper_info_clear
+	@if [ -n "$$CASPER_WORKSPACE_ID" ] && command -v casper >/dev/null 2>&1; then \
+		casper info clear >/dev/null 2>&1 || true; \
+	fi
 endef
 
 ##@ Run
@@ -76,6 +125,7 @@ endef
 .PHONY: dev
 dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 	$(show_urls)
+	$(call casper_info,dev mode — backend and worker run locally,Stop the containers with `make infra-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd backend && PORT=$(DEV_BACKEND_PORT) ./mvnw -q spring-boot:run; kill 0 ) & \
 		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
@@ -85,6 +135,7 @@ dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reload)
 	$(COMPOSE) up -d --build
 	$(show_urls)
+	$(call casper_info,demo mode — backend containerized and worker local,Tear down the containers with `make app-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
@@ -92,6 +143,7 @@ app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reloa
 .PHONY: app-down
 app-down: ## Stop and remove the containers
 	$(COMPOSE) down
+	$(casper_info_clear)
 
 ##@ Workspace
 
