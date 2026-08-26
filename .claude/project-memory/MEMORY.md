@@ -39,5 +39,5 @@
 - [TEMPORAL_DEBUG for IDE debugging](references/temporal-debug-deadlock.md) — set TEMPORAL_DEBUG=true to debug workflows/replay with breakpoints without a PotentialDeadlockException (TMPRL1101); keep off in CI
 - [Running workflows in @SpringBootTest against the test server](references/spring-boot-test-temporal-worker.md) — `test` profile overlay (application-test.yaml) keeps base config; worker-auto-discovery from base, starter starts the WorkerFactory with the context
 - [Owner-selection reason is optional (best-effort)](references/owner-selection-reason-optional.md) — reason tolerated as null/blank; TriageStatus shares identical shape + Jackson annotations across worker and backend
-- [Authoritative Maven version lookup](references/maven-version-lookup.md) — read the `<release>` of maven-metadata.xml for the latest version; the solrsearch API lags behind
+- [Authoritative Maven version lookup](references/maven-version-lookup.md) — read maven-metadata.xml and take the newest unqualified `<version>`; `<release>` may be a milestone, solrsearch lags
 - [Replay fixture embeds the owner-selection reason string](references/replay-fixture-reason-sync.md) — fixture hard-codes OwnerSelector's reason; replay test won't catch drift, resync via make capture-history
