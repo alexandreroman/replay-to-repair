@@ -5,16 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>replay-to-repair — triage dashboard</title>
   <!-- Tailwind Play CDN + Alpine.js: no build step. -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script>
-    tailwind.config = { theme: { extend: {
-      fontFamily: { display: ['Space Grotesk', 'sans-serif'], mono: ['IBM Plex Mono', 'monospace'] },
-      colors: { violet: '#8B5CF6', lime: '#B6F35A', slateb: '#7C8FB1' },
-    }}};
-  </script>
+  <!-- Theme tokens, CSS-first (v4 has no JS config). -->
+  <style type="text/tailwindcss">
+    @theme {
+      --font-display: "Space Grotesk", sans-serif;
+      --font-mono: "IBM Plex Mono", monospace;
+      --color-violet: #8B5CF6;
+      --color-lime: #B6F35A;
+      --color-slateb: #7C8FB1;
+    }
+  </style>
   <style>
     body {
       background:
@@ -124,7 +128,7 @@
       <button
         @click="generate()"
         :disabled="generating"
-        class="grad-btn bg-[linear-gradient(100deg,#8B5CF6,#5B7CFA)] shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] transition disabled:opacity-50"
+        class="grad-btn bg-[linear-gradient(100deg,#8B5CF6,#5B7CFA)] shrink-0 rounded-lg px-5 py-2.5 font-mono text-sm font-medium text-white shadow-[0_0_30px_-6px_#8B5CF6] cursor-pointer transition disabled:opacity-50"
       >
         <span x-text="generating ? 'Generating…' : 'Generate an issue'"></span>
       </button>
@@ -150,7 +154,7 @@
       <h2 class="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-neutral-500">Owners</h2>
       <div class="flex flex-wrap gap-2.5">
         <template x-for="owner in owners()" :key="owner.name">
-          <span class="animate-owner-in inline-flex items-center gap-2 rounded-full border border-slateb/25 bg-white/5 px-3 py-1 font-mono text-sm backdrop-blur">
+          <span class="animate-owner-in inline-flex items-center gap-2 rounded-full border border-slateb/25 bg-white/5 px-3 py-1 font-mono text-sm backdrop-blur-sm">
             <span class="icon icon-user h-3.5 w-3.5 text-slateb"></span>
             <span class="text-neutral-100" x-text="owner.name"></span>
             <span class="text-xs text-lime" x-text="owner.count"></span>
@@ -171,7 +175,7 @@
     <!-- One card per workflow, sorted most-recent first. -->
     <div class="space-y-6">
       <template x-for="issue in issues" :key="issue.workflowId">
-        <article class="animate-card-in overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur transition hover:border-violet/40">
+        <article class="animate-card-in overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm transition hover:border-violet/40">
           <div class="flex items-start justify-between gap-4">
             <h3 class="min-w-0 pr-2 font-medium leading-snug text-white">
               <span
