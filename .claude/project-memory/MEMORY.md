@@ -41,3 +41,4 @@
 - [Owner-selection reason is optional (best-effort)](references/owner-selection-reason-optional.md) — reason tolerated as null/blank; TriageStatus shares identical shape + Jackson annotations across worker and backend
 - [Authoritative Maven version lookup](references/maven-version-lookup.md) — read maven-metadata.xml and take the newest unqualified `<version>`; `<release>` may be a milestone, solrsearch lags
 - [Replay fixture embeds the owner-selection reason string](references/replay-fixture-reason-sync.md) — fixture hard-codes OwnerSelector's reason; replay test won't catch drift, resync via make capture-history
+- [Frontend styling: Tailwind v4 browser build](references/frontend-tailwind-v4-browser.md) — pinned @tailwindcss/browser CDN, theme tokens in a CSS-first @theme block, no build step
