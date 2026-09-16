@@ -48,7 +48,9 @@ Implemented and committed:
 - Temporal Web UI proxied at `/temporal`, with executions labelled through
   Temporal user metadata: a static summary and Markdown static details at
   start, a summary per Activity, and current details published at each `Step`
-  (see [[temporal-user-metadata-ui-only]]).
+  (see [[temporal-user-metadata-ui-only]]). A `markdown-renderer` container
+  serves the Web UI's `/render` route, which the gateway routes
+  `/temporal/render*` to so the User Metadata tab renders.
 - A committed event-history fixture
   (`worker/src/test/resources/history/issue-triage.json`) and a single
   `IssueTriageWorkflowReplayTest` that replays it against the workflow with

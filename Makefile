@@ -53,13 +53,13 @@ export GATEWAY_HOST_MAPPING
 ##@ Infra
 
 .PHONY: infra-up
-infra-up: ## Start Temporal + gateway in containers
+infra-up: ## Start Temporal + gateway + Markdown renderer in containers
 	BACKEND_UPSTREAM=$(DEV_BACKEND_HOST):$(DEV_BACKEND_PORT) \
-		$(COMPOSE) up -d temporal gateway
+		$(COMPOSE) up -d temporal markdown-renderer gateway
 
 .PHONY: infra-down
-infra-down: ## Stop Temporal + gateway
-	$(COMPOSE) stop temporal gateway
+infra-down: ## Stop Temporal + gateway + Markdown renderer
+	$(COMPOSE) stop temporal markdown-renderer gateway
 	$(casper_info_clear)
 
 # Print the demo's useful URLs. The gateway serves the dashboard and proxies

@@ -22,15 +22,16 @@ server `temporalio/temporal:latest` (CLI 1.9.1, Server 1.32.0, UI 2.54.1):
 - Activity summaries label the bars of the workflow's **Timeline** tab, as
   `SelectOwner · Ask the LLM which roster owner fits the issue`.
 - Current details travel only through the built-in
-  `__temporal_workflow_metadata` Query, so reading them needs a live worker and
-  a running execution — the same constraint as the dashboard's own `getStatus`
-  Query.
-- The UI's **User Metadata** tab renders its Summary and Details boxes empty
-  under this gateway setup: it displays them in an iframe pointing at the UI's
-  Markdown route `/render?content=…`, and that route answers the SvelteKit 404
-  page whenever the UI runs behind `--ui-public-path`. The same URL renders
-  correctly on a dev server serving the UI at the root. The Timeline tab and
-  the CLI are the working routes.
+  `__temporal_workflow_metadata` Query, so reading them needs a live worker —
+  the same constraint as the dashboard's own `getStatus` Query. A closed
+  execution answers it too: the worker replays its history to serve the Query.
+  `DescribeWorkflowExecution` does not carry them.
+- The UI's **User Metadata** tab shows its Summary and Details in an iframe
+  pointing at the UI's server-side Markdown route `/render?content=…`, which
+  is not registered under `--ui-public-path` and answers the SPA shell behind
+  `/temporal`. The gateway routes that single path to a `markdown-renderer`
+  container serving the same Web UI at its root, which is what makes the tab
+  render (see the comments in `compose.yaml` and `gateway/Caddyfile`).
 
 User metadata does not produce a workflow command, so adding or changing it
 leaves a committed replay fixture valid and `IssueTriageWorkflowReplayTest`
@@ -48,7 +49,7 @@ type name fails silently, which is easy to ship unnoticed.
 
 **How to apply:** keep `setMemo` as the machine-readable channel and treat
 summary/details/current details as display strings; demo the Activity
-summaries from the Timeline tab rather than the User Metadata tab; truncate a
-static summary to the 200-byte cap; derive per-Activity options from the shared
+summaries from the Timeline tab, which labels each bar; truncate a static
+summary to the 200-byte cap; derive per-Activity options from the shared
 defaults via `toBuilder()` so the timeout and retry policy survive; spell
 per-Activity keys with an upper-case first letter.

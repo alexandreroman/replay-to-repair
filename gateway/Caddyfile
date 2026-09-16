@@ -13,6 +13,20 @@
 		reverse_proxy {$BACKEND_UPSTREAM:backend:8080}
 	}
 
+	# WORKAROUND for an upstream Web UI defect, not a design choice: the Web UI
+	# renders a workflow's static summary and details in an iframe pointing at
+	# its own server-side Markdown route, /render, and that route is not
+	# registered under --ui-public-path — behind /temporal it answers the SPA
+	# shell, leaving the User Metadata tab empty. Only this one path goes to a
+	# standalone Web UI served at the root (see compose.yaml), stripped of the
+	# prefix. It must precede the /temporal* block below, which matches first
+	# otherwise. Pending an upstream fix — this route and the extra service both
+	# go away once the Web UI serves /render under its public path.
+	handle /temporal/render* {
+		uri strip_prefix /temporal
+		reverse_proxy markdown-renderer:8080
+	}
+
 	# Temporal Web UI, proxied under /temporal. The dev server runs with
 	# --ui-public-path /temporal (see compose.yaml), so it serves its assets
 	# under that prefix — forward the prefix instead of stripping it.

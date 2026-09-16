@@ -40,6 +40,14 @@ proxy in `gateway/Caddyfile`). In a Casper worktree these host ports are
 remapped from `CASPER_PORT` (`make worktree-init`): `+0` gateway, `+1` Temporal
 gRPC, `+2` dev backend.
 
+One path escapes that proxy as a **workaround for an upstream Web UI defect**:
+the Web UI's server-side Markdown route `/render` is not registered under
+`--ui-public-path`, which leaves the User Metadata tab empty. The gateway
+sends `/temporal/render*` to a `markdown-renderer` service (the same Web UI
+image, served at its root, no host port). Pending an upstream fix — the
+service and the route both go away once the Web UI serves `/render` under its
+public path.
+
 ## Modules
 
 - `backend` — REST API + Temporal client. Containerized.
