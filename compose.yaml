@@ -1,7 +1,8 @@
 # Orchestrates the containerized parts of the demo: Temporal dev server, the
-# backend REST API, and the Caddy gateway. The worker is deliberately NOT here
-# — it runs locally (`make dev`) so it can be rebuilt and restarted quickly
-# during the live demo.
+# backend REST API, the Caddy gateway, and the Markdown renderer that works
+# around a Web UI defect. The worker is deliberately NOT here — it runs
+# locally (`make dev`) so it can be rebuilt and restarted quickly during the
+# live demo.
 services:
   # Temporal dev server — local development ONLY, never production.
   # Single process with a built-in database and Web UI. The UI is served through
@@ -26,6 +27,32 @@ services:
       resources:
         limits:
           memory: 512M
+    restart: unless-stopped
+
+  # WORKAROUND for an upstream Web UI defect, not a design choice: the Web UI
+  # renders a workflow's static summary and details in an iframe pointing at
+  # its own server-side Markdown route, /render, and that route is not
+  # registered under --ui-public-path. Behind /temporal it answers the SPA
+  # shell instead, so the User Metadata tab shows two empty boxes. This is the
+  # same Web UI as the one the dev server bundles, served at the root, where
+  # /render works; the gateway routes only /temporal/render* here. Pending an
+  # upstream fix — this service and the gateway route both go away once the Web
+  # UI serves /render under its public path.
+  # Markdown rendering is all this serves: it is not a second cluster, and it
+  # points at the dev server only because the Web UI expects a cluster address.
+  markdown-renderer:
+    image: temporalio/ui:latest
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     restart: unless-stopped
 
   # REST API consumed by the frontend. Reachable only through the gateway.

@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-07-23, the demo is feature-complete and both Maven modules build
+As of 2026-09-16, the demo is feature-complete and both Maven modules build
 green.
 
 Implemented and committed:
@@ -38,12 +38,19 @@ Implemented and committed:
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
   `NoSuitableOwner` failure), rather than the neutral "received" placeholder.
-  `IssueView` carries a `workflowUrl` field: a same-origin Temporal Web UI
-  deep-link (`/temporal/namespaces/{namespace}/workflows/{workflowId}/{runId}/history`)
+  `IssueView` carries the issue id, read from `TriageStatus` when the execution
+  resolves and from the memo otherwise, which the API exposes without the
+  dashboard rendering it. It also carries a `workflowUrl` field: a same-origin
+  Temporal Web UI deep-link (`/temporal/namespaces/{namespace}/workflows/{workflowId}/{runId}/history`)
   built server-side with the namespace read from the client, so the frontend
   hardcodes nothing. Each card title is an anchor to that link, styled to render
   identically until hover (underline on hover only).
-- Temporal Web UI proxied at `/temporal`.
+- Temporal Web UI proxied at `/temporal`, with executions labelled through
+  Temporal user metadata: a static summary and Markdown static details at
+  start, a summary per Activity, and current details published at each `Step`
+  (see [[temporal-user-metadata-ui-only]]). A `markdown-renderer` container
+  serves the Web UI's `/render` route, which the gateway routes
+  `/temporal/render*` to so the User Metadata tab renders.
 - A committed event-history fixture
   (`worker/src/test/resources/history/issue-triage.json`) and a single
   `IssueTriageWorkflowReplayTest` that replays it against the workflow with

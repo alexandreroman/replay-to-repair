@@ -58,11 +58,15 @@ The **worker always runs locally** (never containerized) so it can be rebuilt
 and redeployed in seconds during the demo. The two entry points differ only in
 where the backend runs:
 
-- `make app-up` — backend, gateway, and Temporal run in containers; the worker
-  runs locally. This is the demo topology (redeploy the worker while the rest
-  keeps running).
+- `make app-up` — backend, gateway, Temporal, and a Markdown renderer run in
+  containers; the worker runs locally. This is the demo topology (redeploy the
+  worker while the rest keeps running).
 - `make dev` — backend **and** worker run locally with hot reload (for IDE
-  debugging); only Temporal and the gateway stay in containers.
+  debugging); Temporal, the gateway, and the Markdown renderer stay in
+  containers.
+
+The Markdown renderer is not part of the demo's design: it works around an
+upstream Temporal Web UI defect, pending an upstream fix.
 
 Both serve the dashboard at <http://localhost:8080> and run the local processes
 in the foreground; press Ctrl-C to stop them, then `make app-down` to remove the
@@ -157,8 +161,8 @@ the Activity bug is found by stepping through it, not by the test failing.
 make app-up      # run the app: backend containerized, worker local (demo mode)
 make dev         # run the app: backend + worker local, hot reload (dev mode)
 make app-down    # stop and remove the containers
-make infra-up    # start only Temporal + gateway in containers
-make infra-down  # stop Temporal + gateway
+make infra-up    # start Temporal + gateway + Markdown renderer in containers
+make infra-down  # stop Temporal + gateway + Markdown renderer
 make test        # run the test suite for both Maven modules
 make build       # build the production JARs for both modules
 ```
