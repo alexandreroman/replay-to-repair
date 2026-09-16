@@ -36,7 +36,7 @@ class IssueTriageWorkflowTest {
                         + "spike, and the order service returns 500 to the client");
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
-                .setWorkflowId("issue-triage-test-" + issue.id())
+                .setWorkflowId("issue-triage-test-" + issue.issueId())
                 .build();
         var workflow = workflowClient.newWorkflowStub(IssueTriageWorkflow.class, options);
 

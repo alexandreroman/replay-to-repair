@@ -45,7 +45,7 @@ class OwnerSelector {
         return """
                 Issue title: %s
                 Issue description: %s
-                """.formatted(issue.title(), issue.description());
+                """.formatted(issue.issueTitle(), issue.issueDescription());
     }
 
     // The roster lives in the issue-triage skill and is only known LLM-side, so the reply cannot be

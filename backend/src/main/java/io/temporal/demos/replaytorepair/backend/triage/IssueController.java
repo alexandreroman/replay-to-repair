@@ -68,7 +68,7 @@ class IssueController {
         var issue = issueGenerator.next();
         // Short random suffix: unique-enough to avoid id clashes across demo runs while staying readable.
         var suffix = UUID.randomUUID().toString().substring(0, 6);
-        var workflowId = "issue-triage-" + issue.id() + "-" + suffix;
+        var workflowId = "issue-triage-" + issue.issueId() + "-" + suffix;
 
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
@@ -78,9 +78,9 @@ class IssueController {
                 // UI-only labels for the Temporal Web UI and are never read back, so the two carry
                 // the same issue data on purpose.
                 .setMemo(Map.of(
-                        MEMO_ISSUE_ID, issue.id(),
-                        MEMO_ISSUE_TITLE, issue.title(),
-                        MEMO_ISSUE_DESCRIPTION, issue.description()))
+                        MEMO_ISSUE_ID, issue.issueId(),
+                        MEMO_ISSUE_TITLE, issue.issueTitle(),
+                        MEMO_ISSUE_DESCRIPTION, issue.issueDescription()))
                 .setStaticSummary(staticSummary(issue))
                 .setStaticDetails(staticDetails(issue))
                 .build();
@@ -90,8 +90,8 @@ class IssueController {
         WorkflowClient.start(workflow::triage, issue);
         LOGGER.atInfo()
                 .addKeyValue("workflowId", workflowId)
-                .addKeyValue("issueId", issue.id())
-                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("issueId", issue.issueId())
+                .addKeyValue("issueTitle", issue.issueTitle())
                 .log("triage.workflow.started");
 
         return new GenerateResponse(workflowId, issue);
@@ -99,7 +99,7 @@ class IssueController {
 
     /** Single line identifying the triage, shown as the workflow summary in the Temporal Web UI. */
     private static String staticSummary(Issue issue) {
-        var summary = "Triage " + issue.id() + ": " + issue.title();
+        var summary = "Triage " + issue.issueId() + ": " + issue.issueTitle();
         if (summary.getBytes(StandardCharsets.UTF_8).length <= MAX_SUMMARY_BYTES) {
             return summary;
         }
@@ -115,7 +115,7 @@ class IssueController {
 
                 %s
 
-                Issue id: `%s`""".formatted(issue.title(), issue.description(), issue.id());
+                Issue id: `%s`""".formatted(issue.issueTitle(), issue.issueDescription(), issue.issueId());
     }
 
     /**

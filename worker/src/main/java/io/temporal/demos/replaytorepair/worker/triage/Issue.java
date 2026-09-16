@@ -7,5 +7,5 @@ package io.temporal.demos.replaytorepair.worker.triage;
  * duplicate this record instead of sharing a common Maven module, so its name and shape must stay
  * identical on both sides.
  */
-public record Issue(String id, String title, String description) {
+public record Issue(String issueId, String issueTitle, String issueDescription) {
 }

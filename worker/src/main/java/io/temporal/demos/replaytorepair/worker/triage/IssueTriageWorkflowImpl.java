@@ -53,8 +53,8 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         var receivedAt = Instant.ofEpochMilli(Workflow.currentTimeMillis());
         moveTo(issue, receivedAt, Step.ISSUE_RECEIVED, null, null);
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
-                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("issueId", issue.issueId())
+                .addKeyValue("issueTitle", issue.issueTitle())
                 .log("triage.issue.received");
 
         moveTo(issue, receivedAt, Step.AI_ANALYSIS, null, null);
@@ -63,7 +63,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         var reason = assignment.reason();
         moveTo(issue, receivedAt, Step.OWNER_SELECTED, owner, reason);
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueId", issue.issueId())
                 .addKeyValue("owner", owner)
                 .addKeyValue("reason", reason)
                 .log("triage.owner.assigned");
@@ -76,7 +76,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
         activities.notifyAssignment(issue, owner);
         moveTo(issue, receivedAt, Step.DONE, owner, reason);
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueId", issue.issueId())
                 .addKeyValue("owner", owner)
                 .log("triage.completed");
         return currentStatus;
@@ -98,7 +98,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     }
 
     private static TriageStatus statusAt(Issue issue, Instant receivedAt, Step step, String owner, String reason) {
-        return new TriageStatus(issue.id(), issue.title(), step, owner, reason, receivedAt);
+        return new TriageStatus(issue.issueId(), issue.issueTitle(), step, owner, reason, receivedAt);
     }
 
     /** Short Markdown line describing the step being executed, including the owner once it is known. */

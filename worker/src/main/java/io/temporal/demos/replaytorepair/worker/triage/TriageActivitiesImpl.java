@@ -27,7 +27,7 @@ public class TriageActivitiesImpl implements TriageActivities {
         // The wrapper owns both logs, so it always writes "selecting" then "selected" around the
         // owner returned by the delegated selection.
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueId", issue.issueId())
                 .log("triage.owner.selecting");
         // An empty selection is the deliberate no-suitable-owner verdict: the component stays
         // Temporal-agnostic and it is raised here as a non-retryable NoSuitableOwner failure that
@@ -35,7 +35,7 @@ public class TriageActivitiesImpl implements TriageActivities {
         var assignment = ownerSelector.select(issue).orElseThrow(() -> ApplicationFailure.newNonRetryableFailure(
                 "No suitable owner in the roster for this issue", "NoSuitableOwner"));
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueId", issue.issueId())
                 .addKeyValue("owner", assignment.owner())
                 .addKeyValue("reason", assignment.reason())
                 .log("triage.owner.selected");
@@ -47,7 +47,7 @@ public class TriageActivitiesImpl implements TriageActivities {
         // The ticket already exists in the ticketing system; here we only record the assigned owner on
         // it.
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
+                .addKeyValue("issueId", issue.issueId())
                 .addKeyValue("owner", owner)
                 .log("triage.ticket.updating");
         // Simulate the ticketing-system call so the "Owner assigned" step stays visible in the
@@ -55,8 +55,8 @@ public class TriageActivitiesImpl implements TriageActivities {
         simulateWork(TICKET_UPDATE_DELAY, "Interrupted while updating the ticket");
         // No external call in the demo: logging is enough to show the ticket was updated.
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
-                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("issueId", issue.issueId())
+                .addKeyValue("issueTitle", issue.issueTitle())
                 .addKeyValue("owner", owner)
                 .log("triage.ticket.updated");
     }
@@ -68,8 +68,8 @@ public class TriageActivitiesImpl implements TriageActivities {
         simulateWork(NOTIFY_DELAY, "Interrupted while notifying issue assignment");
         // No external notification in the demo: logging is enough to show the step ran.
         LOGGER.atInfo()
-                .addKeyValue("issueId", issue.id())
-                .addKeyValue("issueTitle", issue.title())
+                .addKeyValue("issueId", issue.issueId())
+                .addKeyValue("issueTitle", issue.issueTitle())
                 .addKeyValue("owner", owner)
                 .log("triage.assignment.notified");
     }
