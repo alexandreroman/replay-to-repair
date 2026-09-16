@@ -44,3 +44,4 @@
 - [Frontend styling: Tailwind v4 browser build](references/frontend-tailwind-v4-browser.md) — pinned @tailwindcss/browser CDN, theme tokens in a CSS-first @theme block, no build step
 - [Verify the dashboard in a painting browser panel](references/dashboard-browser-verification.md) — card animations only advance in the visible panel; headless reads of opacity/innerText mislead
 - [Temporal user metadata is UI-only](references/temporal-user-metadata-ui-only.md) — summary/details label the Web UI, the memo stays the programmatic source; replay-safe
+- [Workflow input wire names must match the replay fixture](references/workflow-input-wire-names-replay.md) — renaming an Issue component fails replay until make capture-history runs
