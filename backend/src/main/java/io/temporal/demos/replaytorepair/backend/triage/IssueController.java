@@ -1,5 +1,6 @@
 package io.temporal.demos.replaytorepair.backend.triage;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,12 @@ class IssueController {
     private static final Logger LOGGER = LoggerFactory.getLogger(IssueController.class);
 
     /**
+     * Memo key carrying the issue id. Stored at start time so the dashboard can still label a
+     * running workflow even while the worker is offline (Query unavailable).
+     */
+    private static final String MEMO_ISSUE_ID = "issueId";
+
+    /**
      * Memo key carrying the issue title. Stored at start time so the dashboard can still label a
      * running workflow even while the worker is offline (Query unavailable).
      */
@@ -40,6 +47,9 @@ class IssueController {
      * the description even while the worker is offline (Query unavailable).
      */
     private static final String MEMO_ISSUE_DESCRIPTION = "issueDescription";
+
+    /** Size limit the Temporal server enforces on a workflow static summary. */
+    private static final int MAX_SUMMARY_BYTES = 200;
 
     private final WorkflowClient workflowClient;
     private final IssueGenerator issueGenerator;
@@ -63,7 +73,16 @@ class IssueController {
         var options = WorkflowOptions.newBuilder()
                 .setTaskQueue(IssueTriageWorkflow.TASK_QUEUE)
                 .setWorkflowId(workflowId)
-                .setMemo(Map.of(MEMO_ISSUE_TITLE, issue.title(), MEMO_ISSUE_DESCRIPTION, issue.description()))
+                // The memo is the programmatic data source: the dashboard reads it back through
+                // listExecutions when no worker is running. The static summary and details are
+                // UI-only labels for the Temporal Web UI and are never read back, so the two carry
+                // the same issue data on purpose.
+                .setMemo(Map.of(
+                        MEMO_ISSUE_ID, issue.id(),
+                        MEMO_ISSUE_TITLE, issue.title(),
+                        MEMO_ISSUE_DESCRIPTION, issue.description()))
+                .setStaticSummary(staticSummary(issue))
+                .setStaticDetails(staticDetails(issue))
                 .build();
         var workflow = workflowClient.newWorkflowStub(IssueTriageWorkflow.class, options);
 
@@ -76,6 +95,27 @@ class IssueController {
                 .log("triage.workflow.started");
 
         return new GenerateResponse(workflowId, issue);
+    }
+
+    /** Single line identifying the triage, shown as the workflow summary in the Temporal Web UI. */
+    private static String staticSummary(Issue issue) {
+        var summary = "Triage " + issue.id() + ": " + issue.title();
+        if (summary.getBytes(StandardCharsets.UTF_8).length <= MAX_SUMMARY_BYTES) {
+            return summary;
+        }
+        // Cut on a character boundary: a UTF-8 character takes at most 3 bytes, so a third of the
+        // budget in characters, plus the one-character ellipsis, always fits.
+        return summary.substring(0, MAX_SUMMARY_BYTES / 3 - 1) + "…";
+    }
+
+    /** Markdown block detailing the triaged issue, shown as the workflow details in the Temporal Web UI. */
+    private static String staticDetails(Issue issue) {
+        return """
+                ### %s
+
+                %s
+
+                Issue id: `%s`""".formatted(issue.title(), issue.description(), issue.id());
     }
 
     /**
@@ -114,8 +154,9 @@ class IssueController {
             var triage = running
                     ? stub.query("getStatus", TriageStatus.class)
                     : stub.getResult(TriageStatus.class);
-            return new IssueView(workflowId, triage.issueTitle(), issueDescriptionFromMemo(execution),
-                    triage.currentStep(), triage.assignedOwner(), triage.receivedAt(), workflowUrl(execution));
+            return new IssueView(triage.issueId(), workflowId, triage.issueTitle(),
+                    issueDescriptionFromMemo(execution), triage.currentStep(), triage.assignedOwner(),
+                    triage.receivedAt(), workflowUrl(execution));
         } catch (Exception e) {
             // A single unresolvable execution (e.g. worker offline mid-redeploy) must not fail the
             // whole endpoint: keep the dashboard usable by returning a neutral placeholder view.
@@ -129,14 +170,16 @@ class IssueController {
 
     /** Neutral placeholder for a running or completed execution whose status is not resolvable yet. */
     private IssueView neutralView(WorkflowExecutionMetadata execution, String workflowId) {
-        return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
-                TriageStatus.Step.ISSUE_RECEIVED, null, execution.getStartTime(), workflowUrl(execution));
+        return new IssueView(issueIdFromMemo(execution), workflowId, issueTitleFromMemo(execution),
+                issueDescriptionFromMemo(execution), TriageStatus.Step.ISSUE_RECEIVED, null,
+                execution.getStartTime(), workflowUrl(execution));
     }
 
     /** View for a terminal non-completed execution: a triage that ended in failure. */
     private IssueView failedView(WorkflowExecutionMetadata execution, String workflowId) {
-        return new IssueView(workflowId, issueTitleFromMemo(execution), issueDescriptionFromMemo(execution),
-                TriageStatus.Step.FAILED, null, execution.getStartTime(), workflowUrl(execution));
+        return new IssueView(issueIdFromMemo(execution), workflowId, issueTitleFromMemo(execution),
+                issueDescriptionFromMemo(execution), TriageStatus.Step.FAILED, null,
+                execution.getStartTime(), workflowUrl(execution));
     }
 
     /** Relative Temporal Web UI deep-link to the workflow run, proxied same-origin under {@code /temporal}. */
@@ -145,6 +188,14 @@ class IssueController {
         var workflowId = execution.getExecution().getWorkflowId();
         var runId = execution.getExecution().getRunId();
         return "/temporal/namespaces/" + namespace + "/workflows/" + workflowId + "/" + runId + "/history";
+    }
+
+    private String issueIdFromMemo(WorkflowExecutionMetadata execution) {
+        try {
+            return execution.getMemo(MEMO_ISSUE_ID, String.class, String.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String issueTitleFromMemo(WorkflowExecutionMetadata execution) {
@@ -169,10 +220,12 @@ class IssueController {
     }
 
     /**
-     * One dashboard card: a stable workflow id, the flattened {@link TriageStatus} fields, and a
-     * relative deep-link to the workflow run in the Temporal Web UI.
+     * One dashboard card: the triaged issue id, a stable workflow id, the flattened
+     * {@link TriageStatus} fields, and a relative deep-link to the workflow run in the Temporal
+     * Web UI.
      */
     record IssueView(
+            String issueId,
             String workflowId,
             String issueTitle,
             String issueDescription,
