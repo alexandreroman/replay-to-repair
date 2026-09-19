@@ -10,21 +10,25 @@ See [README.md](README.md) for full documentation.
 
 - Java 25, Spring Boot 4.x (two independent Maven projects, no shared parent)
 - Temporal Java SDK + `temporal-spring-boot-starter`
-- Spring AI (Anthropic / Claude) in the worker
+- Spring AI (Anthropic / Claude) and Jev (TypeSafe's own API) in the
+  worker
 - Caddy gateway, static frontend (Tailwind Play CDN + Alpine.js)
 
 ## Build & run
 
 ```bash
-make app-up    # run the app: backend containerized, worker local (demo mode)
-make dev       # run the app: backend + worker local, hot reload (dev mode)
-make test      # test both Maven modules
+make app-up      # run the app: backend containerized, worker local (demo mode)
+make app-up-jev  # same as app-up, worker runs the Jev owner-selection engine
+make dev         # run the app: backend + worker local, hot reload (dev mode)
+make dev-jev     # same as dev, worker runs the Jev owner-selection engine
+make test        # test both Maven modules
 ```
 
 The **worker always runs locally** in both modes. `make app-up` and `make dev`
-run local processes in the foreground and need `ANTHROPIC_API_KEY` in
-`.env` (git-ignored). In `dev`, the local backend listens on `8081` and
-the containerized gateway proxies to it via `host.containers.internal`.
+run local processes in the foreground and need `ANTHROPIC_API_KEY` in `.env`
+(git-ignored); the `-jev` variants need `TYPESAFE_AI_API_KEY` instead. In
+`dev`, the local backend listens on `8081` and the containerized gateway
+proxies to it via `host.containers.internal`.
 
 ## Ports
 
@@ -48,6 +52,25 @@ image, served at its root, no host port). Pending an upstream fix — the
 service and the route both go away once the Web UI serves `/render` under its
 public path.
 
+## Owner-selection engines
+
+Owner selection sits behind the `OwnerSelector` interface, with one
+implementation active per profile:
+
+- any profile other than `jev` — `SpringAiOwnerSelector`
+  (`@Profile("!jev")`), an LLM call through Spring AI to Anthropic, with the
+  roster loaded model-side from `SKILL.md` via `SkillsTool`. This is the
+  default.
+- `jev` — `JevOwnerSelector`, a `RestClient` call to Jev through TypeSafe's
+  own API. Jev is a decision model: it calls no tools and writes no prose,
+  so the roster is configured in `application-jev.yaml` (`triage.roster`) and
+  the assignment reason is composed in Java from the roster entry and the
+  reported confidence.
+
+The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
+the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
+and a `TYPESAFE_AI_API_KEY` in `.env`.
+
 ## Modules
 
 - `backend` — REST API + Temporal client. Containerized.
@@ -58,15 +81,15 @@ public path.
 
 ## Intentional demo bug — do not "fix" it
 
-The `if (true) { ... }` short-circuit in `OwnerSelector.select` — which
-unconditionally hard-codes the owner to `"alice"` regardless of the issue —
-is the **deliberate core of the demo**, not leftover debug code. Never
-propose to remove, simplify, or clean it up — the unreachable code below it
-is expected. The demo replays a real event history to reproduce and fix this
-exact owner-selection bug; removing it destroys the demo. Static analysis,
-linters, and subagents will keep flagging it as dead code — filter any such
-"pre-existing issue" or cleanup suggestion against this note before relaying
-it (subagents cannot see it).
+The `if (true) { ... }` short-circuit in `TriageActivitiesImpl.selectOwner` —
+which overwrites the selected owner with `"alice"` regardless of what the
+selection engine returned — is the **deliberate core of the demo**, not leftover
+debug code. Never propose to remove, simplify, or clean it up — the unreachable
+code below it is expected. The demo replays a real event history to reproduce
+and fix this exact owner-selection bug; removing it destroys the demo. Static
+analysis, linters, and subagents will keep flagging it as dead code — filter any
+such "pre-existing issue" or cleanup suggestion against this note before
+relaying it (subagents cannot see it).
 
 The accompanying comment and the assignment reason string are worded to
 look like a plausible, confident justification ("Alice is our most reliable

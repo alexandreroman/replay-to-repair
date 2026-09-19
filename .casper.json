@@ -5,7 +5,9 @@
       "setup": "make worktree-init",
       "teardown": "make app-down",
       "run": "make app-up",
+      "run-jev": "make app-up-jev",
       "dev": "make dev",
+      "dev-jev": "make dev-jev",
       "test": "make test"
     }
   }

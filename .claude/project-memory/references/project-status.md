@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-09-16, the demo is feature-complete and both Maven modules build
+As of 2026-09-19, the demo is feature-complete and both Maven modules build
 green.
 
 Implemented and committed:
@@ -15,25 +15,34 @@ Implemented and committed:
   `notifyAssignment` regular). `updateTicket` runs within the `OWNER_SELECTED`
   step (no new `Step` enum value): it records the assigned owner on the issue's
   existing ticket and simulates a ~2s ticketing-system call. Owner selection is
-  delegated to a Temporal-agnostic `OwnerSelector`
-  component that returns `Optional<OwnerAssignment>` (the chosen owner and a
-  short reason for the pick) and holds the intentional
-  `if (true) { return Optional.of(new OwnerAssignment("alice", "optimal owner for anomaly triage")); }`
-  bug. The `selectOwner` Activity returns that `OwnerAssignment`;
+  delegated to a Temporal-agnostic `OwnerSelector` component that returns
+  `Optional<OwnerAssignment>` (the chosen owner and a short reason for the
+  pick), genuinely calling the LLM for every issue. The `selectOwner` Activity
+  holds the intentional `if (true) { assignment = new OwnerAssignment("alice",
+  "optimal owner for anomaly triage"); }` bug immediately before its
+  `triage.owner.selected` log, overwriting whatever `OwnerSelector` returned;
   `TriageActivitiesImpl` raises the non-retryable `NoSuitableOwner` failure when
-  the selection is empty. The workflow stores the reason at the workflow level in
-  `TriageStatus.assignmentReason` (worker and backend copies identical); the
+  the selection is empty. The workflow stores the reason at the workflow level
+  in `TriageStatus.assignmentReason` (worker and backend copies identical); the
   reason is deliberately not surfaced by the REST API (`IssueView`) or the
   dashboard.
-- Owner-selection roster and rules loaded via `SkillsTool` from a single
-  `SKILL.md` (see [[skills-tool-owner-roster]]). The skill's output contract
-  covers the chosen owner (or the `none` token when no owner fits) plus a
-  one-sentence reason; `OwnerSelector` maps `none` to an empty `Optional` and
-  `TriageActivitiesImpl` raises a non-retryable `NoSuitableOwner` failure that
-  terminates the workflow, and the activity retry policy is bounded (see
-  [[demo-design-constraints]]). The `OwnerSelection` reply is parsed defensively
-  with Jackson: unknown fields are ignored, property names are explicit, and
-  common key variants map via aliases.
+- Owner selection runs through one of two engines behind the `OwnerSelector`
+  interface, selected by Spring profile (see [[skills-tool-owner-roster]] and
+  [[demo-design-constraints]]). `SpringAiOwnerSelector` (`@Profile("!jev")`, the
+  default) calls Claude through Spring AI, with the roster loaded model-side
+  from `SKILL.md` via `SkillsTool`; its output contract covers the chosen owner
+  (or the `none` token when no owner fits) plus a one-sentence reason, parsed
+  defensively with Jackson (unknown fields ignored, explicit property names,
+  common key variants mapped via aliases). `JevOwnerSelector`
+  (`@Profile("jev")`) calls Jev, a decision model, through TypeSafe's own API at
+  `POST https://api.typesafe.ai/v1/systemone`, with the roster configured in
+  `application-jev.yaml` (`triage.roster`); because Jev calls no tools and
+  writes no prose, the assignment reason is composed in Java from the matched
+  roster entry's specialties and the reported confidence.
+  `TriageRosterConsistencyTest` keeps the SKILL.md table and the configured
+  roster in step, comparing owner names, specialties, and preferences cell by
+  cell. Both engines map `none` to an empty `Optional` (the deliberate
+  no-suitable-owner verdict) and throw on a malformed answer.
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
@@ -67,20 +76,34 @@ Implemented and committed:
 - A GitHub Actions CI workflow (`.github/workflows/build.yml`) that builds and
   tests both modules on push/PR to `main` (and manual dispatch). It runs a
   matrix over `[backend, worker]` on Temurin 25 with `./mvnw -B verify`; it
-  builds no container images. The worker's LLM-backed tests read
-  `ANTHROPIC_API_KEY` from a repository secret of the same name, which must be
-  configured for the worker job to pass. A `paths-ignore` filter on the
-  push/PR triggers skips runs for commits that touch only docs or UI
-  (`**.md`, `.claude/**`, `frontend/**`, `gateway/**`, `LICENSE`,
-  `.gitignore`); `workflow_dispatch` is unfiltered so manual runs always run.
+  builds no container images. The worker's tests read `ANTHROPIC_API_KEY` and
+  `TYPESAFE_AI_API_KEY` from repository secrets of the same names — the former
+  for the default Spring AI engine, the latter for the jev-profile tests calling
+  Jev through TypeSafe's own API — and both secrets must be configured for the
+  worker job to pass. A `paths-ignore` filter on the push/PR triggers skips
+  runs for commits that touch only docs or UI (`**.md`, `.claude/**`,
+  `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
+  is unfiltered so manual runs always run.
 
-`make test` stays green with the intentional bug committed. `OwnerSelectorTest`
-(a `@SpringBootTest` exercising the real `OwnerSelector` bean with the injected
-`ChatClient`) and `IssueTriageWorkflowTest` (a `@SpringBootTest` running the
-workflow on the Temporal test server) exercise the short-circuit and assert
-that `alice` is selected, so they pass while the bug is present;
-`IssueTriageWorkflowReplayTest` replays the committed history and guards workflow
-determinism. All stay green with the committed short-circuit.
+The worker suite is 31/31 green with the intentional bug committed.
+`OwnerSelectorTest` (a `@SpringBootTest` exercising the real
+`SpringAiOwnerSelector` bean with the injected `ChatClient`) and
+`JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev
+through TypeSafe's own API for real) each assert genuine engine-driven owner
+selection per issue category (e.g. alice for backend issues, carol for security
+issues), unaffected by the short-circuit. `JevOwnerSelectorOfflineTest`
+exercises `JevOwnerSelector`'s response-parsing branches (the `none` verdict, a
+blank or off-roster choice, a missing answer, an HTTP error, unknown root
+fields) against a `MockRestServiceServer` stand-in for TypeSafe's API, with no
+network call and no API key. `OwnerSelectorProfileTest` pins
+`SpringAiOwnerSelector` as the default
+engine when no profile is set. `TriageActivitiesImplTest` runs under the `test`
+profile with `OwnerSelector` mocked to return a different owner (carol),
+proving the Activity's override: it asserts the Activity still returns
+`alice`/`"optimal owner for anomaly triage"`. `IssueTriageWorkflowTest` (a
+`@SpringBootTest` running the workflow on the Temporal test server) and
+`IssueTriageWorkflowReplayTest` (which replays the committed history) both still
+observe `alice` end-to-end. All stay green with the committed short-circuit.
 
 No implementation work is outstanding.
 

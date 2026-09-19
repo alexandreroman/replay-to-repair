@@ -117,10 +117,16 @@ endef
 
 ##@ Run
 
+# Owner-selection engine: empty selects Spring AI, `jev` selects Jev via TypeSafe.
+WORKER_PROFILES ?=
+worker_profile_env = $(if $(WORKER_PROFILES),SPRING_PROFILES_ACTIVE=$(WORKER_PROFILES) ,)
+
 # The worker always runs locally (never containerized) so it can be rebuilt and
-# redeployed fast during the demo. It needs ANTHROPIC_API_KEY (from .env).
-# Both targets run local processes in the foreground; the trap reaps the whole
-# process group on Ctrl-C or crash, and any process tearing down takes the rest.
+# redeployed fast during the demo. The default (Spring AI) engine needs
+# ANTHROPIC_API_KEY; the `jev` engine needs TYPESAFE_AI_API_KEY (both from
+# .env). Both targets run local processes in the foreground; the trap reaps
+# the whole process group on Ctrl-C or crash, and any process tearing down
+# takes the rest.
 
 .PHONY: dev
 dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
@@ -128,8 +134,12 @@ dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 	$(call casper_info,dev mode — backend and worker run locally,Stop the containers with `make infra-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd backend && PORT=$(DEV_BACKEND_PORT) ./mvnw -q spring-boot:run; kill 0 ) & \
-		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
+		( cd worker && $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
+
+.PHONY: dev-jev
+dev-jev: WORKER_PROFILES := jev
+dev-jev: dev ## Run dev mode with the Jev owner-selection engine
 
 .PHONY: app-up
 app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reload)
@@ -137,8 +147,12 @@ app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reloa
 	$(show_urls)
 	$(call casper_info,demo mode — backend containerized and worker local,Tear down the containers with `make app-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
-		( cd worker && ./mvnw -q spring-boot:run; kill 0 ) & \
+		( cd worker && $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
+
+.PHONY: app-up-jev
+app-up-jev: WORKER_PROFILES := jev
+app-up-jev: app-up ## Run demo mode with the Jev owner-selection engine
 
 .PHONY: app-down
 app-down: ## Stop and remove the containers
