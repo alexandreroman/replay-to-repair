@@ -39,7 +39,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
             TriageActivities.class,
             DEFAULT_ACTIVITY_OPTIONS,
             Map.of(
-                    "SelectOwner", withSummary("Ask the LLM which roster owner fits the issue"),
+                    "SelectOwner", withSummary("Ask the selection engine which roster owner fits the issue"),
                     "UpdateTicket", withSummary("Record the assigned owner on the issue ticket"),
                     "NotifyAssignment", withSummary("Notify the assigned owner of the issue")));
 
@@ -105,7 +105,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
     private static String currentDetails(Step step, String owner) {
         var description = switch (step) {
             case ISSUE_RECEIVED -> "Issue received, triage starting";
-            case AI_ANALYSIS -> "Asking the LLM which owner fits the issue";
+            case AI_ANALYSIS -> "Asking the selection engine which owner fits the issue";
             case OWNER_SELECTED -> "Owner selected, updating the ticket";
             case NOTIFYING -> "Notifying the assigned owner";
             case DONE -> "Triage complete";
