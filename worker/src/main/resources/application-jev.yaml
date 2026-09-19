@@ -1,0 +1,44 @@
+# Overlay for the `jev` profile: owner selection runs through Jev, TypeSafe's
+# decision model, reached through TypeSafe's own API. The Spring AI engine and
+# its ChatClient are not part of this profile, so no Anthropic key is needed.
+spring:
+  http:
+    clients:
+      # Pin the JDK client: it does not retry a POST, and pinning keeps a future
+      # transitive Apache HttpClient from reintroducing retries. Temporal's
+      # Activity retry policy is the only retry in this system.
+      imperative:
+        factory: jdk
+      # 5s connect + 20s read stays inside the Activity's 30s start-to-close
+      # timeout (IssueTriageWorkflowImpl), so a stalled call fails here with a
+      # cause that names the real problem instead of an opaque
+      # ActivityTaskTimedOut from Temporal's own deadline.
+      connect-timeout: 5s
+      read-timeout: 20s
+      redirects: dont-follow
+
+triage:
+  jev:
+    base-url: https://api.typesafe.ai/v1
+    model: jev-latest
+    api-key: ${TYPESAFE_AI_API_KEY:}
+  # The roster the Jev question offers as its choice criteria. It mirrors the
+  # `## Owners` table of the issue-triage skill, which the Spring AI engine's
+  # model reads instead; TriageRosterConsistencyTest holds the two in step.
+  roster:
+    owners:
+      - name: alice
+        specialties: [backend, APIs, relational databases]
+        preferences: [REST design, service integration, query tuning]
+      - name: bob
+        specialties: [infrastructure, CI/CD, networking]
+        preferences: [build pipelines, deployments, observability]
+      - name: carol
+        specialties: [security, cryptography]
+        preferences: [authentication, vulnerability triage, hardening]
+      - name: dave
+        specialties: [frontend, accessibility, UI]
+        preferences: [design systems, responsive layouts, usability]
+      - name: erin
+        specialties: [analytics, machine learning]
+        preferences: [dashboards, model training, experimentation]
