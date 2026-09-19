@@ -47,6 +47,8 @@ jobs:
       # The worker's tests call the real Anthropic API; the backend does not
       # need this, so exposing it to both jobs is harmless.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # The worker's jev-profile tests call Jev through TypeSafe's own API.
+      TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
     steps:
       - uses: actions/checkout@v7
 

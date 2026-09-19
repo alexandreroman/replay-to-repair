@@ -31,7 +31,7 @@
 - [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String
 - [Logging conventions](references/logging-conventions.md) — SLF4J 2.x fluent API with addKeyValue context; .log() message is a dotted domain code, not a sentence; Workflow.getLogger in workflow code (replay-safe)
 - [ECS log format for all processes, always](references/ecs-logging-all-processes.md) — backend + worker emit ECS structured console logs unconditionally, including local/dev mode
-- [Owner roster in a SkillsTool skill](references/skills-tool-owner-roster.md) — roster+rules live in SKILL.md loaded via spring-ai-agent-utils SkillsTool; build() returns ToolCallback
+- [Roster lives twice, per engine](references/skills-tool-owner-roster.md) — SKILL.md (Spring AI) vs. application-jev.yaml roster; a test keeps them synced
 - [Roster specialties are mutually disjoint](references/roster-disjoint-specialties.md) — each problem area maps to one owner; alice owns backend/API/relational-DB, erin only analytics/ML
 - [IssueGenerator dataset is balanced across owners](references/issue-generator-owner-balance.md) — ~6 issues per owner incl. erin analytics/ML; next() stays a uniform random pick
 - [README must not mention Casper](references/readme-no-casper.md) — keep Casper out of the public README; Casper port-remap docs live in CLAUDE.md only
@@ -45,3 +45,4 @@
 - [Verify the dashboard in a painting browser panel](references/dashboard-browser-verification.md) — card animations only advance in the visible panel; headless reads of opacity/innerText mislead
 - [Temporal user metadata is UI-only](references/temporal-user-metadata-ui-only.md) — summary/details label the Web UI, the memo stays the programmatic source; replay-safe
 - [Workflow input wire names must match the replay fixture](references/workflow-input-wire-names-replay.md) — renaming an Issue component fails replay until make capture-history runs
+- [Jev's decision-model wire format](references/jev-wire-format.md) — POST /v1/systemone on TypeSafe's API; no client-side retry, Temporal owns it

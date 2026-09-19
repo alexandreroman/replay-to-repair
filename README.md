@@ -19,18 +19,21 @@ The scenario: an AI triage agent assigns incoming issues to developers
 ("owners") based on their specialties. The triage and owner selection are
 driven by a **skill** — a
 [`SKILL.md`](worker/src/main/resources/skills/issue-triage/SKILL.md) file
-holding the owner roster and routing rules, which the agent loads as a tool. In production, every recent issue lands
-on the same owner. The root cause is a debug line accidentally committed in the
-owner-selection Activity — an early return that short-circuits the LLM call.
-Once the source of the failure is pinpointed in the **Activity**, the fix
-becomes straightforward — and it ships to production faster.
+holding the owner roster and routing rules, which the agent loads as a tool.
+In production, every recent issue lands on the same owner. The root cause
+sits in the owner-selection Activity: it genuinely asks the selection engine
+for the right owner and gets back a sound answer — then discards it,
+unconditionally overwriting the result with the same hard-coded owner. Once
+the source of the failure is pinpointed in the **Activity**, the fix becomes
+straightforward — and it ships to production faster.
 
 ## Prerequisites
 
 - **JDK 25** (each module ships a Maven wrapper — no separate Maven install)
 - **Docker** or **Podman** with the Compose plugin
-- **Anthropic API key** — the owner-selection Activity calls Claude via
-  Spring AI
+- **Anthropic API key** — the default owner-selection engine calls Claude via
+  Spring AI. Running the `jev` profile instead calls Jev through TypeSafe's own
+  API and needs a TypeSafe key (see [Configuration](#configuration))
 - **Temporal CLI** (optional) — used by `make capture-history` and the manual
   capture route to export a Workflow's event history; the Web UI at
   <http://localhost:8080/temporal> is another way and covers the rest of the
@@ -48,6 +51,11 @@ make app-up
 # 3. Open the dashboard
 open http://localhost:8080
 ```
+
+> [!NOTE]
+> Running with `SPRING_PROFILES_ACTIVE=jev` selects the Jev owner-selection
+> engine instead: it needs `TYPESAFE_AI_API_KEY` in `.env`, not the Anthropic
+> key.
 
 The Temporal Web UI is available at <http://localhost:8080/temporal> — it is
 served through the gateway, not on a separate port.
@@ -99,9 +107,11 @@ The end-to-end narrative the tooling drives (target flow):
    results back in — the Activity code is not re-run — so the Workflow path is
    reproduced deterministically, pointing you straight at the owner-selection
    Activity.
-5. Inspect that Activity and spot the committed debug early return that
-   short-circuits the LLM call.
-6. Remove the debug early return → fix the bug.
+5. Inspect that Activity: the selection engine is genuinely asked and
+   returns a sound answer, then the code immediately overwrites it with the
+   same hard-coded owner.
+6. Remove the hard-coded override that discards the engine's answer → fix
+   the bug.
 7. Rebuild and redeploy the worker only — the backend, gateway, and dashboard
    keep running throughout.
 8. Submit new issues under real conditions → verify a correct distribution of
@@ -169,12 +179,13 @@ make build       # build the production JARs for both modules
 
 ## Configuration
 
-| Variable            | Description                          | Default          |
-| ------------------- | ------------------------------------ | ---------------- |
-| `ANTHROPIC_API_KEY` | Anthropic key for the worker's LLM   | (required)       |
-| `ANTHROPIC_MODEL`   | Claude model used for owner triage   | `claude-sonnet-5`|
-| `TEMPORAL_ADDRESS`  | Temporal gRPC endpoint               | `localhost:7233` |
-| `TEMPORAL_NAMESPACE`| Temporal namespace                   | `default`        |
+| Variable              | Description                          | Default          |
+| --------------------- | ------------------------------------ | ---------------- |
+| `ANTHROPIC_API_KEY`   | Anthropic key for the worker's LLM   | (required)       |
+| `ANTHROPIC_MODEL`     | Claude model used for owner triage   | `claude-sonnet-5`|
+| `TYPESAFE_AI_API_KEY` | TypeSafe key for the Jev engine      | (jev only)       |
+| `TEMPORAL_ADDRESS`    | Temporal gRPC endpoint               | `localhost:7233` |
+| `TEMPORAL_NAMESPACE`  | Temporal namespace                   | `default`        |
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it
 automatically.
@@ -189,7 +200,8 @@ graph TD
     Gateway -->|/temporal| Temporal[(Temporal server)]
     Backend -->|start / query workflows| Temporal
     Worker[Worker - local process] -->|poll task queue| Temporal
-    Worker -->|owner selection| Claude[Anthropic Claude]
+    Worker -->|owner selection, default profile| Claude[Anthropic Claude]
+    Worker -->|owner selection, jev profile| Jev[Jev via TypeSafe API]
 ```
 
 The `backend` and `worker` are independent Maven projects with no shared parent
