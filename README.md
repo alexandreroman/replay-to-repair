@@ -16,24 +16,26 @@ through the real run in your IDE debugger, pinpoint the bug, fix it, and
 redeploy the worker under real conditions.
 
 The scenario: an AI triage agent assigns incoming issues to developers
-("owners") based on their specialties. The triage and owner selection are
-driven by a **skill** — a
+("owners") based on their specialties. Owner selection sits behind a
+swappable engine — by default an LLM driven by a **skill**, a
 [`SKILL.md`](worker/src/main/resources/skills/issue-triage/SKILL.md) file
-holding the owner roster and routing rules, which the agent loads as a tool.
-In production, every recent issue lands on the same owner. The root cause
-sits in the owner-selection Activity: it genuinely asks the selection engine
-for the right owner and gets back a sound answer — then discards it,
-unconditionally overwriting the result with the same hard-coded owner. Once
-the source of the failure is pinpointed in the **Activity**, the fix becomes
-straightforward — and it ships to production faster.
+holding the owner roster and routing rules, which the agent loads as a tool
+(see [Owner-selection engines](#owner-selection-engines)). In production,
+every recent issue lands on the same owner. The root cause sits in the
+owner-selection Activity: it genuinely asks the selection engine for the
+right owner and gets back a sound answer — then discards it, unconditionally
+overwriting the result with the same hard-coded owner. Once the source of the
+failure is pinpointed in the **Activity**, the fix becomes straightforward —
+and it ships to production faster.
 
 ## Prerequisites
 
 - **JDK 25** (each module ships a Maven wrapper — no separate Maven install)
 - **Docker** or **Podman** with the Compose plugin
 - **Anthropic API key** — the default owner-selection engine calls Claude via
-  Spring AI. Running the `jev` profile instead calls Jev through TypeSafe's own
-  API and needs a TypeSafe key (see [Configuration](#configuration))
+  Spring AI. The Jev engine (`make app-up-jev` / `make dev-jev`) calls Jev
+  through TypeSafe's own API and needs a TypeSafe key instead (see
+  [Configuration](#configuration))
 - **Temporal CLI** (optional) — used by `make capture-history` and the manual
   capture route to export a Workflow's event history; the Web UI at
   <http://localhost:8080/temporal> is another way and covers the rest of the
@@ -53,9 +55,9 @@ open http://localhost:8080
 ```
 
 > [!NOTE]
-> Running with `SPRING_PROFILES_ACTIVE=jev` selects the Jev owner-selection
-> engine instead: it needs `TYPESAFE_AI_API_KEY` in `.env`, not the Anthropic
-> key.
+> `make app-up-jev` (or `make dev-jev`) runs the worker with the Jev
+> owner-selection engine instead: it needs `TYPESAFE_AI_API_KEY` in `.env`,
+> not the Anthropic key.
 
 The Temporal Web UI is available at <http://localhost:8080/temporal> — it is
 served through the gateway, not on a separate port.
@@ -73,12 +75,40 @@ where the backend runs:
   debugging); Temporal, the gateway, and the Markdown renderer stay in
   containers.
 
+Each has a `-jev` variant — `make app-up-jev` and `make dev-jev` — that runs
+the worker with the Jev owner-selection engine. Only the worker's engine
+changes; the topology is the same.
+
 The Markdown renderer is not part of the demo's design: it works around an
 upstream Temporal Web UI defect, pending an upstream fix.
 
 Both serve the dashboard at <http://localhost:8080> and run the local processes
 in the foreground; press Ctrl-C to stop them, then `make app-down` to remove the
 containers. Run `make` (or `make help`) to list every target.
+
+### Owner-selection engines
+
+Owner selection sits behind the `OwnerSelector` interface, with one
+implementation active per Spring profile:
+
+- **Spring AI + Claude** — the default (`@Profile("!jev")`). The roster is
+  read model-side: the model loads
+  [`SKILL.md`](worker/src/main/resources/skills/issue-triage/SKILL.md) as a
+  tool and answers with the chosen owner and a one-sentence reason.
+- **Jev** — the `jev` profile. A `RestClient` call to Jev, TypeSafe's
+  decision model, through TypeSafe's own API. Jev calls no tools and writes
+  no prose, so the roster is configured Java-side in
+  [`application-jev.yaml`](worker/src/main/resources/application-jev.yaml)
+  (`triage.roster`), and the assignment reason is composed from the matched
+  roster entry and the reported confidence.
+
+The roster therefore exists twice, once per engine, and
+`TriageRosterConsistencyTest` holds the two copies in step — edit them
+together.
+
+Both engines are genuinely asked for an owner, and the demo's bug discards
+either answer the same way: the engine choice changes nothing about the
+narrative.
 
 ### Ports
 
@@ -169,7 +199,9 @@ the Activity bug is found by stepping through it, not by the test failing.
 
 ```bash
 make app-up      # run the app: backend containerized, worker local (demo mode)
+make app-up-jev  # same as app-up, worker runs the Jev owner-selection engine
 make dev         # run the app: backend + worker local, hot reload (dev mode)
+make dev-jev     # same as dev, worker runs the Jev owner-selection engine
 make app-down    # stop and remove the containers
 make infra-up    # start Temporal + gateway + Markdown renderer in containers
 make infra-down  # stop Temporal + gateway + Markdown renderer
@@ -181,11 +213,15 @@ make build       # build the production JARs for both modules
 
 | Variable              | Description                          | Default          |
 | --------------------- | ------------------------------------ | ---------------- |
-| `ANTHROPIC_API_KEY`   | Anthropic key for the worker's LLM   | (required)       |
+| `ANTHROPIC_API_KEY`   | Anthropic key for the default engine | (required)       |
 | `ANTHROPIC_MODEL`     | Claude model used for owner triage   | `claude-sonnet-5`|
 | `TYPESAFE_AI_API_KEY` | TypeSafe key for the Jev engine      | (jev only)       |
 | `TEMPORAL_ADDRESS`    | Temporal gRPC endpoint               | `localhost:7233` |
 | `TEMPORAL_NAMESPACE`  | Temporal namespace                   | `default`        |
+
+The Jev endpoint and model id (`triage.jev.*`) are not environment variables:
+they live in
+[`application-jev.yaml`](worker/src/main/resources/application-jev.yaml).
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it
 automatically.
