@@ -12,9 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Spring Boot test for {@link OwnerSelector} using the real Spring-wired
+ * Spring Boot test for {@link SpringAiOwnerSelector} using the real Spring-wired
  * {@link org.springframework.ai.chat.client.ChatClient}. It verifies that backend, API and
- * relational-database issues — alice's domain in the triage roster — are assigned to alice.
+ * relational-database issues — alice's domain in the triage roster — are assigned to alice, and
+ * that a security issue is routed to carol instead.
  */
 @SpringBootTest
 @ActiveProfiles("test")
