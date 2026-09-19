@@ -8,8 +8,10 @@ type: project
 
 The demonstrated bug always lives in activity-side code, never in the Workflow.
 Owner selection is delegated by the `selectOwner` Activity to a
-Temporal-agnostic `OwnerSelector` component, and the intentional bug lives in
-that component; it runs during Activity execution, not in Workflow code. The
+Temporal-agnostic `OwnerSelector` component, which genuinely picks the owner
+via the LLM. The intentional bug lives directly in the `selectOwner` Activity,
+which overwrites the selected owner with alice immediately before it logs the
+final assignment; it runs during Activity execution, not in Workflow code. The
 Workflow code stays linear: it holds no conditional branching or early return
 and delegates every decision to Activities. It completes normally on the happy
 path, and a non-retryable Activity failure terminates it in error.

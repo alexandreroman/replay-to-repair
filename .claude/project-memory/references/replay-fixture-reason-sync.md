@@ -1,6 +1,6 @@
 ---
 name: "Replay fixture embeds the owner-selection reason string"
-description: "The committed event-history fixture hard-codes OwnerSelector's reason; keep it in sync via make capture-history"
+description: "The committed event-history fixture hard-codes TriageActivitiesImpl's reason; keep it in sync via make capture-history"
 type: project
 ---
 
@@ -8,10 +8,10 @@ type: project
 
 The committed replay fixture
 (`worker/src/test/resources/history/issue-triage.json`) encodes
-`OwnerSelector`'s reason string in two payloads: the `selectOwner`
+`TriageActivitiesImpl`'s reason string in two payloads: the `selectOwner`
 activity result (`{"owner":"alice","reason":"..."}`) and the final
 workflow result (`assignmentReason`). Both must match the reason
-returned by `OwnerSelector.select` — currently
+returned by `TriageActivitiesImpl.selectOwner` — currently
 `"optimal owner for anomaly triage"` (see [[project-status]],
 [[demo-design-constraints]]).
 
@@ -22,7 +22,7 @@ demo has the presenter download and inspect this exact history in the
 Temporal Web UI, so a stale reason (e.g. an obvious-hack marker) silently
 contradicts the deliberately confident wording.
 
-**How to apply:** after rewording the reason in `OwnerSelector`,
+**How to apply:** after rewording the reason in `TriageActivitiesImpl`,
 regenerate the fixture with `make capture-history` (stack up, one triage
 workflow completed) rather than trusting the test suite to catch the
 drift. Confirm both payloads decode to the new reason.

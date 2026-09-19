@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,5 +46,15 @@ class OwnerSelectorTest {
     @MethodSource("backendIssues")
     void assignsBackendIssuesToAlice(Issue issue) {
         assertThat(ownerSelector.select(issue).map(OwnerAssignment::owner)).hasValue("alice");
+    }
+
+    @Test
+    void assignsSecurityIssueToCarol() {
+        var issue = new Issue(
+                "SEC-1",
+                "Session tokens are not invalidated on logout",
+                "After a user logs out, the issued JWT stays valid until it expires, so a stolen token "
+                        + "still authenticates requests against the API");
+        assertThat(ownerSelector.select(issue).map(OwnerAssignment::owner)).hasValue("carol");
     }
 }

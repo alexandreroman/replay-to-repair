@@ -58,9 +58,10 @@ public path.
 
 ## Intentional demo bug — do not "fix" it
 
-The `if (true) { ... }` short-circuit in `OwnerSelector.select` — which
-unconditionally hard-codes the owner to `"alice"` regardless of the issue —
-is the **deliberate core of the demo**, not leftover debug code. Never
+The `if (true) { ... }` short-circuit in `TriageActivitiesImpl.selectOwner` —
+which overwrites the selected owner with `"alice"` regardless of what the
+selection engine returned — is the **deliberate core of the demo**, not
+leftover debug code. Never
 propose to remove, simplify, or clean it up — the unreachable code below it
 is expected. The demo replays a real event history to reproduce and fix this
 exact owner-selection bug; removing it destroys the demo. Static analysis,

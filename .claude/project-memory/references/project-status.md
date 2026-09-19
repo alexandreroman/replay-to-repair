@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-09-16, the demo is feature-complete and both Maven modules build
+As of 2026-09-19, the demo is feature-complete and both Maven modules build
 green.
 
 Implemented and committed:
@@ -17,11 +17,12 @@ Implemented and committed:
   existing ticket and simulates a ~2s ticketing-system call. Owner selection is
   delegated to a Temporal-agnostic `OwnerSelector`
   component that returns `Optional<OwnerAssignment>` (the chosen owner and a
-  short reason for the pick) and holds the intentional
-  `if (true) { return Optional.of(new OwnerAssignment("alice", "optimal owner for anomaly triage")); }`
-  bug. The `selectOwner` Activity returns that `OwnerAssignment`;
-  `TriageActivitiesImpl` raises the non-retryable `NoSuitableOwner` failure when
-  the selection is empty. The workflow stores the reason at the workflow level in
+  short reason for the pick), genuinely calling the LLM for every issue. The
+  `selectOwner` Activity holds the intentional
+  `if (true) { assignment = new OwnerAssignment("alice", "optimal owner for anomaly triage"); }`
+  bug immediately before its `triage.owner.selected` log, overwriting whatever
+  `OwnerSelector` returned; `TriageActivitiesImpl` raises the non-retryable
+  `NoSuitableOwner` failure when the selection is empty. The workflow stores the reason at the workflow level in
   `TriageStatus.assignmentReason` (worker and backend copies identical); the
   reason is deliberately not surfaced by the REST API (`IssueView`) or the
   dashboard.
@@ -76,11 +77,15 @@ Implemented and committed:
 
 `make test` stays green with the intentional bug committed. `OwnerSelectorTest`
 (a `@SpringBootTest` exercising the real `OwnerSelector` bean with the injected
-`ChatClient`) and `IssueTriageWorkflowTest` (a `@SpringBootTest` running the
-workflow on the Temporal test server) exercise the short-circuit and assert
-that `alice` is selected, so they pass while the bug is present;
-`IssueTriageWorkflowReplayTest` replays the committed history and guards workflow
-determinism. All stay green with the committed short-circuit.
+`ChatClient`) asserts genuine LLM-driven owner selection per issue category
+(e.g. alice for backend issues, carol for security issues), unaffected by the
+short-circuit. `TriageActivitiesImplTest` pins the short-circuit at its
+Activity location, asserting `alice`/`"optimal owner for anomaly triage"`
+regardless of the issue category. `IssueTriageWorkflowTest` (a
+`@SpringBootTest` running the workflow on the Temporal test server) and
+`IssueTriageWorkflowReplayTest` (which replays the committed history) both
+still observe `alice` end-to-end. All stay green with the committed
+short-circuit.
 
 No implementation work is outstanding.
 
