@@ -58,6 +58,14 @@
             <version>${spring-ai-agent-utils.version}</version>
         </dependency>
 
+        <!-- RestClient for the Jev engine's call to TypeSafe's systemone
+             endpoint. This starter brings spring-web and Jackson without an
+             embedded servlet container: the worker serves no HTTP itself. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
