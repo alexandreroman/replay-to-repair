@@ -11,7 +11,7 @@ Temporal test server, put the test-only settings (`test-server.enabled`, the
 `.env` import) in a profile-specific `application-test.yaml` and activate the
 `test` profile — never in a second `application.yaml`. A test `application.yaml`
 sits at the same classpath path as the base one and REPLACES it wholesale,
-dropping `spring.temporal.workers-auto-discovery.packages` (so no worker
+dropping the whole `spring.temporal.workers-auto-discovery` block (so no worker
 registers and a synchronous workflow call hangs forever) along with the Spring
 AI, skills, and ECS-logging settings. A profile overlay merges on top instead,
 so the base config still applies.
