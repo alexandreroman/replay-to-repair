@@ -33,3 +33,18 @@ same way.
 assertion on the settle check above. Reading `opacity`, `offsetHeight`, or
 `innerText` on a freshly loaded background page proves nothing about the
 render. See [[frontend-tailwind-v4-browser]] for where these keyframes live.
+
+## Two more traps in the same family
+
+`casper browser wait --js` evaluates its argument as an **expression**. A
+predicate opening with `const` raises `SyntaxError: Unexpected keyword
+'const'` on every poll, so the wait runs to its full timeout and the page's
+console fills with errors that read as application errors. Write predicates
+expression-only; `casper browser eval` does accept statements, but it shares
+one scope across calls, so a second `const a = …` fails with "Can't create
+duplicate variable". Wrap `eval` bodies in an IIFE.
+
+The Temporal Web UI's User Metadata tab renders its Markdown outside
+`document.body.innerText` — asserting on page text reports the summary and
+details as missing while the tab displays them correctly. Confirm that tab
+with `casper browser screenshot` (see [[temporal-user-metadata-ui-only]]).
