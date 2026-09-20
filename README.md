@@ -3,12 +3,12 @@
 [![Build](https://github.com/alexandreroman/replay-to-repair/actions/workflows/build.yml/badge.svg)](https://github.com/alexandreroman/replay-to-repair/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Temporal durably records the complete event history of every Workflow
-Execution — every input and every result, in order. That unlocks something no
-ordinary system can offer: take the exact history of a failure that happened in
-**production** and replay it, deterministically, on a **local dev machine** —
-stepping through the real execution in a debugger with the very payload that
-triggered the bug.
+[Temporal](https://temporal.io) durably records the complete event history of
+every Workflow Execution — every input and every result, in order. That
+unlocks something no ordinary system can offer: take the exact history of a
+failure that happened in **production** and replay it, deterministically, on
+a **local dev machine** — stepping through the real execution in a debugger
+with the very payload that triggered the bug.
 
 ![App homepage](app.png)
 
