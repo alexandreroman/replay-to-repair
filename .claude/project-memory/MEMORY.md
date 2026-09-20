@@ -47,3 +47,4 @@
 - [Workflow input wire names must match the replay fixture](references/workflow-input-wire-names-replay.md) — renaming an Issue component fails replay until make capture-history runs
 - [Jev's decision-model wire format](references/jev-wire-format.md) — POST /v1/systemone on TypeSafe's API; no client-side retry, Temporal owns it
 - [Worker auto-discovery](references/temporal-workers-auto-discovery-config.md) — workflow-packages scans @WorkflowImpl; activity beans need the flag
+- [README screenshot border treatment](references/readme-screenshot-border.md) — rounded #828892 frame, transparent corners, geometry scaled to image width
