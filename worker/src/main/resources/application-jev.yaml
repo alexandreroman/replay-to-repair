@@ -9,12 +9,14 @@ spring:
       # Activity retry policy is the only retry in this system.
       imperative:
         factory: jdk
-      # 5s connect + 20s read stays inside the Activity's 30s start-to-close
-      # timeout (IssueTriageWorkflowImpl), so a stalled call fails here with a
-      # cause that names the real problem instead of an opaque
-      # ActivityTaskTimedOut from Temporal's own deadline.
+      # A 20s total budget (5s connect + 15s read) matches the one the
+      # Spring AI engine applies in application.yaml, so both engines give up
+      # at the same point, inside the Activity's 30s start-to-close timeout
+      # (IssueTriageWorkflowImpl): a stalled call fails here with a cause
+      # that names the real problem instead of an opaque ActivityTaskTimedOut
+      # from Temporal's own deadline.
       connect-timeout: 5s
-      read-timeout: 20s
+      read-timeout: 15s
       redirects: dont-follow
 
 triage:
