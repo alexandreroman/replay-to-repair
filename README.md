@@ -35,10 +35,14 @@ and it ships to production faster.
 
 - **JDK 25** (each module ships a Maven wrapper — no separate Maven install)
 - **Docker** or **Podman** with the Compose plugin
-- **Anthropic API key** — the default owner-selection engine calls Claude via
-  Spring AI. The Jev engine (`make app-up-jev` / `make dev-jev`) calls Jev
-  through TypeSafe's own API and needs a TypeSafe key instead (see
-  [Configuration](#configuration))
+- **An owner-selection API key** — which one depends on the engine you run;
+  put it in `.env` (see [Configuration](#configuration)):
+  - **Anthropic** (`ANTHROPIC_API_KEY`) — the default engine calls Claude
+    through Spring AI
+  - **TypeSafe** (`TYPESAFE_AI_API_KEY`) — the Jev engine (`make app-up-jev` /
+    `make dev-jev`) calls [Jev](https://typesafe.ai), TypeSafe's decision
+    model, through TypeSafe's own API at `https://api.typesafe.ai`. This
+    profile needs no Anthropic key
 - **Temporal CLI** (optional) — used by `make capture-history` and the manual
   capture route to export a Workflow's event history; the Web UI at
   <http://localhost:8080/temporal> is another way and covers the rest of the
