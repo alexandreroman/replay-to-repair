@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage;
+package io.temporal.demos.replaytorepair.worker.triage.jev;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,6 +14,9 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import io.temporal.demos.replaytorepair.worker.triage.Issue;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
 
 /**
  * Offline unit test for {@link JevOwnerSelector}: no network call and no API key, unlike the live

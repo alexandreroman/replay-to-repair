@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage;
+package io.temporal.demos.replaytorepair.worker.triage.jev;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,16 +11,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import io.temporal.demos.replaytorepair.worker.triage.Issue;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerAssignment;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
+
 /**
- * Spring Boot test for {@link SpringAiOwnerSelector} using the real Spring-wired
- * {@link org.springframework.ai.chat.client.ChatClient}. It verifies that backend, API and
- * relational-database issues — alice's domain in the triage roster — are assigned to alice, and
- * that a security issue is routed to carol instead.
+ * Spring Boot test for {@link JevOwnerSelector}, calling Jev through TypeSafe's own API for real. It
+ * verifies that backend, API and relational-database issues — alice's domain in the triage roster —
+ * are assigned to alice, and that a security issue goes to carol instead.
  */
 @SpringBootTest
-@ActiveProfiles("test")
-class OwnerSelectorTest {
-    // The real Spring-wired bean, with the ChatClient from the application context.
+@ActiveProfiles({"test", "jev"})
+class JevOwnerSelectorTest {
     @Autowired
     private OwnerSelector ownerSelector;
 
@@ -35,18 +37,21 @@ class OwnerSelectorTest {
                         "DB-1",
                         "Connection pool exhausted on the orders database",
                         "HikariCP times out acquiring a connection to the PostgreSQL orders database; a "
-                                + "slow unindexed query holds connections open for several seconds"),
-                new Issue(
-                        "API-2",
-                        "Paginated products API serializes the wrong page",
-                        "The GET /api/products endpoint ignores the page cursor and always serializes the "
-                                + "first page in its JSON response"));
+                                + "slow unindexed query holds connections open for several seconds"));
+    }
+
+    @Test
+    void usesTheJevEngine() {
+        assertThat(ownerSelector).isInstanceOf(JevOwnerSelector.class);
     }
 
     @ParameterizedTest
     @MethodSource("backendIssues")
     void assignsBackendIssuesToAlice(Issue issue) {
-        assertThat(ownerSelector.select(issue).map(OwnerAssignment::owner)).hasValue("alice");
+        var assignment = ownerSelector.select(issue).orElseThrow();
+        assertThat(assignment.owner()).isEqualTo("alice");
+        assertThat(assignment.reason()).contains("backend").contains("confidence");
+        assertThat(assignment.reason()).matches(".*\\(confidence \\d\\.\\d{2}\\)");
     }
 
     @Test

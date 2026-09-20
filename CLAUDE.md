@@ -67,6 +67,15 @@ implementation active per profile:
   the assignment reason is composed in Java from the roster entry and the
   reported confidence.
 
+Each engine lives in its own sub-package of `worker.triage`, together with
+its Spring configuration and its tests: `triage.springai`
+(`SpringAiOwnerSelector`, `ChatClientConfiguration`) and `triage.jev`
+(`JevOwnerSelector`, `JevConfiguration`, `JevProperties`,
+`TriageRosterProperties`). The `triage` package itself holds what both
+engines share — the `OwnerSelector` contract, `OwnerAssignment`, `Issue` —
+plus the Workflow and Activity implementations the Temporal worker
+auto-discovers.
+
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
 and a `TYPESAFE_AI_API_KEY` in `.env`.

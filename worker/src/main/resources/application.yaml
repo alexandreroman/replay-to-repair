@@ -1,15 +1,17 @@
 spring:
   application:
     name: replay-to-repair-worker
-  # Temporal worker: task queues are derived from @WorkflowImpl / @ActivityImpl
-  # annotations discovered in the package(s) below.
+  # Temporal worker: @WorkflowImpl classes are not beans and are discovered by
+  # scanning the packages below; @ActivityImpl beans come from the application
+  # context. Task queues are derived from both annotations.
   temporal:
     connection:
       target: ${TEMPORAL_ADDRESS:localhost:7233}
     namespace: ${TEMPORAL_NAMESPACE:default}
     workers-auto-discovery:
-      packages:
+      workflow-packages:
         - io.temporal.demos.replaytorepair.worker.triage
+      register-activity-beans: true
   # Anthropic (Claude) via Spring AI powers the owner-selection Activity on
   # every profile other than jev, so ANTHROPIC_API_KEY is required there. The
   # jev profile selects the Jev engine through TypeSafe's own API instead and
@@ -18,8 +20,7 @@ spring:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
       chat:
-        options:
-          model: ${ANTHROPIC_MODEL:claude-sonnet-5}
+        model: ${ANTHROPIC_MODEL:claude-sonnet-5}
 
 # SkillsTool scans this location for <skill-name>/SKILL.md subfolders and
 # exposes each skill to the LLM as a tool (here: the issue-triage skill).
