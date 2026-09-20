@@ -19,6 +19,15 @@ spring:
   ai:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
+      # Turn off the Anthropic SDK's own retry (default 2): Temporal's Activity
+      # retry policy is the only retry in this system, and a second retry layer
+      # underneath it would obscure how many attempts a triage actually took.
+      max-retries: 0
+      # A 20s call timeout stays inside the Activity's 30s start-to-close
+      # timeout (IssueTriageWorkflowImpl), so a stalled LLM call fails here
+      # with a cause that names the real problem instead of an opaque
+      # ActivityTaskTimedOut from Temporal's own deadline.
+      timeout: 20s
       chat:
         model: ${ANTHROPIC_MODEL:claude-sonnet-5}
 

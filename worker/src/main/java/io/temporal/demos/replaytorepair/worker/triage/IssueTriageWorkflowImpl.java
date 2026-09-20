@@ -19,7 +19,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
 
     // Owner selection calls the LLM (network I/O), so it stays a regular activity with retries.
     // Transient failures (LLM/network) and malformed replies retry with capped exponential backoff up
-    // to 3 attempts, while the NoSuitableOwner failure is non-retryable and terminates the workflow in
+    // to 5 attempts, while the NoSuitableOwner failure is non-retryable and terminates the workflow in
     // error immediately.
     private static final ActivityOptions DEFAULT_ACTIVITY_OPTIONS = ActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofSeconds(30))
@@ -27,7 +27,7 @@ public class IssueTriageWorkflowImpl implements IssueTriageWorkflow {
                     .setInitialInterval(Duration.ofSeconds(1))
                     .setBackoffCoefficient(2.0)
                     .setMaximumInterval(Duration.ofSeconds(10))
-                    .setMaximumAttempts(3)
+                    .setMaximumAttempts(5)
                     .setDoNotRetry("NoSuitableOwner")
                     .build())
             .build();
