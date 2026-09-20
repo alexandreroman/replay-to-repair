@@ -3,7 +3,7 @@ package io.temporal.demos.replaytorepair.worker.triage;
 import java.util.Optional;
 
 /** Picks the owner best suited to an issue. */
-interface OwnerSelector {
+public interface OwnerSelector {
     /**
      * Selects the owner best suited to the given issue.
      *

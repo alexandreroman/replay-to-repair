@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage;
+package io.temporal.demos.replaytorepair.worker.triage.springai;
 
 import java.util.Optional;
 
@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import io.temporal.demos.replaytorepair.worker.triage.Issue;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerAssignment;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
 
 /** Owner selection backed by an LLM through Spring AI, using the issue-triage skill for the roster. */
 @Component

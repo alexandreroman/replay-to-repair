@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage;
+package io.temporal.demos.replaytorepair.worker.triage.jev;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

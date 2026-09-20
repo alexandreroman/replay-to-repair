@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage;
+package io.temporal.demos.replaytorepair.worker.triage.jev;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -11,6 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import io.temporal.demos.replaytorepair.worker.triage.Issue;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerAssignment;
+import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
 
 /**
  * Owner selection backed by Jev, a decision model that answers a typed question rather than
