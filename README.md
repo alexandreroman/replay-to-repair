@@ -1,5 +1,8 @@
 # Replay-to-Repair
 
+[![Build](https://github.com/alexandreroman/replay-to-repair/actions/workflows/build.yml/badge.svg)](https://github.com/alexandreroman/replay-to-repair/actions/workflows/build.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 Temporal durably records the complete event history of every Workflow
 Execution — every input and every result, in order. That unlocks something no
 ordinary system can offer: take the exact history of a failure that happened in
