@@ -44,8 +44,8 @@ jobs:
         # parent pom), so they build in parallel.
         module: [backend, worker]
     env:
-      # The worker's tests call the real Anthropic API; the backend does not
-      # need this, so exposing it to both jobs is harmless.
+      # The worker's live-tagged tests call the real Anthropic API; the backend
+      # does not need this, so exposing it to both jobs is harmless.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       # The worker's jev-profile tests call Jev through TypeSafe's own API.
       TYPESAFE_AI_API_KEY: ${{ secrets.TYPESAFE_AI_API_KEY }}
@@ -60,7 +60,9 @@ jobs:
           cache-dependency-path: ${{ matrix.module }}/pom.xml
 
       # verify compiles, runs the tests, and packages the JAR. No container
-      # image is built or pushed.
+      # image is built or pushed. Clearing excluded.test.groups adds the
+      # worker's live-tagged engine tests, which the default run leaves out;
+      # the backend pom defines no such property and ignores it.
       - name: Build and test
         working-directory: ${{ matrix.module }}
-        run: ./mvnw -B verify
+        run: ./mvnw -B verify -Dexcluded.test.groups=

@@ -20,6 +20,8 @@
         <temporal.version>1.39.0</temporal.version>
         <spring-ai.version>2.0.1</spring-ai.version>
         <spring-ai-agent-utils.version>0.12.0</spring-ai-agent-utils.version>
+        <!-- JUnit tags left out of the test run. See the surefire configuration below. -->
+        <excluded.test.groups>live</excluded.test.groups>
     </properties>
 
     <dependencyManagement>
@@ -94,6 +96,18 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- The `live` tag marks OwnerSelectorTest and JevOwnerSelectorTest, which call the
+                 paid Anthropic and TypeSafe APIs for real. They stay out of the default run, which
+                 is therefore offline and needs no API key. Clear the property to run them:
+                 ./mvnw test -Dexcluded.test.groups= -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>${excluded.test.groups}</excludedGroups>
+                </configuration>
             </plugin>
         </plugins>
     </build>

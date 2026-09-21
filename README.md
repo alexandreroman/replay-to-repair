@@ -213,8 +213,14 @@ make app-down    # stop and remove the containers
 make infra-up    # start Temporal + gateway + Markdown renderer in containers
 make infra-down  # stop Temporal + gateway + Markdown renderer
 make test        # run the test suite for both Maven modules
+make test-live   # add the worker tests that call the real selection engines
 make build       # build the production JARs for both modules
 ```
+
+`make test` runs offline — the two tests that call a selection engine for real
+are tagged `live` and excluded by default, so the suite needs no API key.
+`make test-live` adds them back and needs `ANTHROPIC_API_KEY` and
+`TYPESAFE_AI_API_KEY` in `.env`.
 
 ## Configuration
 

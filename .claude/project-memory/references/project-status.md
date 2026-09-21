@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-09-19, the demo is feature-complete and both Maven modules build
+As of 2026-09-21, the demo is feature-complete and both Maven modules build
 green.
 
 Implemented and committed:
@@ -75,8 +75,10 @@ Implemented and committed:
   processes (see [[ecs-logging-all-processes]]).
 - A GitHub Actions CI workflow (`.github/workflows/build.yml`) that builds and
   tests both modules on push/PR to `main` (and manual dispatch). It runs a
-  matrix over `[backend, worker]` on Temurin 25 with `./mvnw -B verify`; it
-  builds no container images. The worker's tests read `ANTHROPIC_API_KEY` and
+  matrix over `[backend, worker]` on Temurin 25 with
+  `./mvnw -B verify -Dexcluded.test.groups=`, which adds the worker's
+  `live`-tagged engine tests to the run; it builds no container images. The
+  worker's live-tagged tests read `ANTHROPIC_API_KEY` and
   `TYPESAFE_AI_API_KEY` from repository secrets of the same names — the former
   for the default Spring AI engine, the latter for the jev-profile tests calling
   Jev through TypeSafe's own API — and both secrets must be configured for the
@@ -85,7 +87,12 @@ Implemented and committed:
   `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
   is unfiltered so manual runs always run.
 
-The worker suite is 31/31 green with the intentional bug committed.
+The worker suite is 31/31 green with the intentional bug committed. `make
+test` runs 23 of them offline in about eleven seconds: `OwnerSelectorTest` and
+`JevOwnerSelectorTest` carry the JUnit `live` tag and `worker/pom.xml` excludes
+that tag through the `excluded.test.groups` property, so the default run makes
+no network call and needs no API key. `make test-live` and CI clear the
+property and run all 31.
 `OwnerSelectorTest` (a `@SpringBootTest` exercising the real
 `SpringAiOwnerSelector` bean with the injected `ChatClient`) and
 `JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev
@@ -101,7 +108,10 @@ engine when no profile is set. `TriageActivitiesImplTest` runs under the `test`
 profile with `OwnerSelector` mocked to return a different owner (carol),
 proving the Activity's override: it asserts the Activity still returns
 `alice`/`"optimal owner for anomaly triage"`. `IssueTriageWorkflowTest` (a
-`@SpringBootTest` running the workflow on the Temporal test server) and
+`@SpringBootTest` running the workflow on the Temporal test server, with owner
+selection on `FixedOwnerSelector`, a `@Primary` test double answering carol
+that tests import explicitly rather than bind to the `test` profile, so
+`OwnerSelectorProfileTest` still resolves the real engine) and
 `IssueTriageWorkflowReplayTest` (which replays the committed history) both still
 observe `alice` end-to-end. All stay green with the committed short-circuit.
 

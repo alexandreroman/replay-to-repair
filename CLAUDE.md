@@ -22,6 +22,7 @@ make app-up-jev  # same as app-up, worker runs the Jev owner-selection engine
 make dev         # run the app: backend + worker local, hot reload (dev mode)
 make dev-jev     # same as dev, worker runs the Jev owner-selection engine
 make test        # test both Maven modules
+make test-live   # add the worker tests that call the real selection engines
 ```
 
 The **worker always runs locally** in both modes. `make app-up` and `make dev`
@@ -29,6 +30,15 @@ run local processes in the foreground and need `ANTHROPIC_API_KEY` in `.env`
 (git-ignored); the `-jev` variants need `TYPESAFE_AI_API_KEY` instead. In
 `dev`, the local backend listens on `8081` and the containerized gateway
 proxies to it via `host.containers.internal`.
+
+`make test` runs offline: the worker's two engine tests
+(`OwnerSelectorTest`, `JevOwnerSelectorTest`) carry the JUnit `live` tag and
+the worker pom excludes that tag by default, so the default run makes no
+network call and needs no API key. They are opt-in through `make test-live`
+(`-Dexcluded.test.groups=`), which needs both keys in `.env`; CI clears the
+same property and keeps running them. Tests that need an `OwnerSelector`
+without an engine import `FixedOwnerSelectorConfiguration`, a `@Primary` test
+double that always answers carol.
 
 ## Ports
 
