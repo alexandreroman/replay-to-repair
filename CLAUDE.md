@@ -31,14 +31,14 @@ run local processes in the foreground and need `ANTHROPIC_API_KEY` in `.env`
 `dev`, the local backend listens on `8081` and the containerized gateway
 proxies to it via `host.containers.internal`.
 
-`make test` runs offline: the worker's two engine tests
-(`OwnerSelectorTest`, `JevOwnerSelectorTest`) carry the JUnit `live` tag and
-the worker pom excludes that tag by default, so the default run makes no
-network call and needs no API key. They are opt-in through `make test-live`
-(`-Dexcluded.test.groups=`), which needs both keys in `.env`; CI clears the
-same property and keeps running them. Tests that need an `OwnerSelector`
-without an engine import `FixedOwnerSelectorConfiguration`, a `@Primary` test
-double that always answers carol.
+`make test` runs offline: the worker's three API-calling tests
+(`OwnerSelectorTest`, `JevOwnerSelectorTest`, `JevClientTest`) carry the JUnit
+`live` tag and the worker pom excludes that tag by default, so the default run
+makes no network call and needs no API key. They are opt-in through `make
+test-live` (`-Dexcluded.test.groups=`), which needs both keys in `.env`; CI
+clears the same property and keeps running them. Tests that need an
+`OwnerSelector` without an engine import `FixedOwnerSelectorConfiguration`, a
+`@Primary` test double that always answers carol.
 
 ## Ports
 
@@ -71,20 +71,23 @@ implementation active per profile:
   (`@Profile("!jev")`), an LLM call through Spring AI to Anthropic, with the
   roster loaded model-side from `SKILL.md` via `SkillsTool`. This is the
   default.
-- `jev` — `JevOwnerSelector`, a `RestClient` call to Jev through TypeSafe's
-  own API. Jev is a decision model: it calls no tools and writes no prose,
-  so the roster is configured in `application-jev.yaml` (`triage.roster`) and
-  the assignment reason is composed in Java from the roster entry and the
-  reported confidence.
+- `jev` — `JevOwnerSelector`, which asks Jev a typed `choice` question through
+  `JevClient` over TypeSafe's own API. Jev is a decision model: it calls no
+  tools and writes no prose, so the roster is configured in
+  `application-jev.yaml` (`triage.roster`) and the assignment reason is
+  composed in Java from the roster entry and the reported confidence.
 
-Each engine lives in its own sub-package of `worker.triage`, together with
-its Spring configuration and its tests: `triage.springai`
+Each engine lives in its own sub-package of `worker.triage`, together with its
+Spring configuration and its tests: `triage.springai`
 (`SpringAiOwnerSelector`, `ChatClientConfiguration`) and `triage.jev`
 (`JevOwnerSelector`, `JevConfiguration`, `JevProperties`,
-`TriageRosterProperties`). The `triage` package itself holds what both
-engines share — the `OwnerSelector` contract, `OwnerAssignment`, `Issue` —
-plus the Workflow and Activity implementations the Temporal worker
-auto-discovers.
+`TriageRosterProperties`). The Jev HTTP client itself sits one level down in
+`triage.jev.client` (`JevClient`, `JevQuestion`, `JevAnswer`): it owns the
+wire format and its own connection settings, and covers Jev's three question
+types — `choice`, `score` and `noul` — even though owner selection only asks a
+`choice`. The `triage` package itself holds what both engines share — the
+`OwnerSelector` contract, `OwnerAssignment`, `Issue` — plus the Workflow and
+Activity implementations the Temporal worker auto-discovers.
 
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`

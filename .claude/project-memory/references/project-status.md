@@ -38,7 +38,11 @@ Implemented and committed:
   `POST https://api.typesafe.ai/v1/systemone`, with the roster configured in
   `application-jev.yaml` (`triage.roster`); because Jev calls no tools and
   writes no prose, the assignment reason is composed in Java from the matched
-  roster entry's specialties and the reported confidence.
+  roster entry's specialties and the reported confidence. The HTTP call goes
+  through `JevClient` (`triage.jev.client`), which owns the wire format and
+  its own connection settings and covers Jev's three question types —
+  `choice`, `score` and `noul`, batched in one call — though owner selection
+  asks only a `choice` (see [[jev-wire-format]]).
   `TriageRosterConsistencyTest` keeps the SKILL.md table and the configured
   roster in step, comparing owner names, specialties, and preferences cell by
   cell. Both engines map `none` to an empty `Optional` (the deliberate
@@ -87,12 +91,12 @@ Implemented and committed:
   `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
   is unfiltered so manual runs always run.
 
-The worker suite is 31/31 green with the intentional bug committed. `make
-test` runs 23 of them offline in about eleven seconds: `OwnerSelectorTest` and
-`JevOwnerSelectorTest` carry the JUnit `live` tag and `worker/pom.xml` excludes
-that tag through the `excluded.test.groups` property, so the default run makes
-no network call and needs no API key. `make test-live` and CI clear the
-property and run all 31.
+The worker suite is 51/51 green with the intentional bug committed. `make
+test` runs 42 of them offline in about eight seconds: `OwnerSelectorTest`,
+`JevOwnerSelectorTest` and `JevClientTest` carry the JUnit `live` tag and
+`worker/pom.xml` excludes that tag through the `excluded.test.groups`
+property, so the default run makes no network call and needs no API key.
+`make test-live` and CI clear the property and run all 51.
 `OwnerSelectorTest` (a `@SpringBootTest` exercising the real
 `SpringAiOwnerSelector` bean with the injected `ChatClient`) and
 `JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev
@@ -102,7 +106,11 @@ issues), unaffected by the short-circuit. `JevOwnerSelectorOfflineTest`
 exercises `JevOwnerSelector`'s response-parsing branches (the `none` verdict, a
 blank or off-roster choice, a missing answer, an HTTP error, unknown root
 fields) against a `MockRestServiceServer` stand-in for TypeSafe's API, with no
-network call and no API key. `OwnerSelectorProfileTest` pins
+network call and no API key. `JevClientOfflineTest` pins the wire format
+itself against JSON captured from the live API — the criteria shape and the
+answer shape of each question type, a mixed batch, and the client's error
+paths — while the live `JevClientTest` checks all three answer shapes against
+the real API in a single call. `OwnerSelectorProfileTest` pins
 `SpringAiOwnerSelector` as the default
 engine when no profile is set. `TriageActivitiesImplTest` runs under the `test`
 profile with `OwnerSelector` mocked to return a different owner (carol),
