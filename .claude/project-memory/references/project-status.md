@@ -47,6 +47,24 @@ Implemented and committed:
   roster in step, comparing owner names, specialties, and preferences cell by
   cell. Both engines map `none` to an empty `Optional` (the deliberate
   no-suitable-owner verdict) and throw on a malformed answer.
+- Owner selection is timed per engine with the plain Micrometer API: each
+  engine registers its own `Timer` in its constructor on the shared
+  `triage.owner.selection` meter name, told apart by the `engine` tag. Actuator
+  exposes it both on the `metrics` endpoint and, through
+  `io.micrometer:micrometer-registry-prometheus`, as a Prometheus/OpenMetrics
+  scrape at `/actuator/prometheus`, where `management.metrics.distribution`
+  publishes it as a percentiles-histogram bounded to `100ms`-`30s`: p50/p95
+  come from `histogram_quantile` over the `_bucket` series, which aggregates
+  across workers (see [[native-friendly-micrometer-metrics]]).
+  `JevOwnerSelectorOfflineTest` pins
+  the meter name and the `engine=jev` tag, the count after a successful
+  selection, and that a failing selection is recorded too. The worker's
+  application HTTP stack is unused and takes an ephemeral port
+  (`server.port: 0`), while Actuator listens on its own
+  `management.server.port`, which the Makefile owns: `WORKER_MANAGEMENT_PORT ?=
+  8082` reaches the local worker in `dev` and `app-up` alike, shows up in the
+  printed URLs and the Casper info panel, and `make worktree-init` derives it
+  as `CASPER_PORT + 3`.
 - Backend REST API (`POST /api/v1/issues/generate`, `GET /api/v1/issues`) and
   the Alpine.js dashboard, served through the Caddy gateway. The dashboard shows
   a distinct `FAILED` state for terminal, non-completed workflows (e.g. the
@@ -91,12 +109,12 @@ Implemented and committed:
   `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
   is unfiltered so manual runs always run.
 
-The worker suite is 51/51 green with the intentional bug committed. `make
-test` runs 42 of them offline in about eight seconds: `OwnerSelectorTest`,
+The worker suite is 52/52 green with the intentional bug committed. `make
+test` runs 43 of them offline in about eight seconds: `OwnerSelectorTest`,
 `JevOwnerSelectorTest` and `JevClientTest` carry the JUnit `live` tag and
 `worker/pom.xml` excludes that tag through the `excluded.test.groups`
 property, so the default run makes no network call and needs no API key.
-`make test-live` and CI clear the property and run all 51.
+`make test-live` and CI clear the property and run all 52.
 `OwnerSelectorTest` (a `@SpringBootTest` exercising the real
 `SpringAiOwnerSelector` bean with the injected `ChatClient`) and
 `JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev

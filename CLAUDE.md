@@ -50,12 +50,14 @@ The Caddy gateway on `8080` is the single browser entry point:
 - `8080` — gateway: dashboard, `/api/*` → backend, `/temporal` → Temporal Web UI
 - `7233` — Temporal gRPC (workers and the backend connect here)
 - `8081` — local backend, `dev` mode only (the gateway proxies to it)
+- `8082` — worker management port, Actuator only (the worker runs locally in
+  both run modes; its application HTTP port is ephemeral and unused)
 
 The Temporal Web UI has no port of its own — it is served through the gateway
 at `/temporal` (`--ui-public-path` on the dev server + a `handle /temporal*`
 proxy in `gateway/Caddyfile`). In a Casper worktree these host ports are
 remapped from `CASPER_PORT` (`make worktree-init`): `+0` gateway, `+1` Temporal
-gRPC, `+2` dev backend.
+gRPC, `+2` dev backend, `+3` worker management port.
 
 One path escapes that proxy as a **workaround for an upstream Web UI defect**:
 the Web UI's server-side Markdown route `/render` is not registered under
@@ -95,6 +97,24 @@ Activity implementations the Temporal worker auto-discovers.
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
 and a `TYPESAFE_API_KEY` in `.env`.
+
+Each engine registers its own Micrometer `Timer` in its constructor, against
+the shared meter name `triage.owner.selection`; the `engine` tag (`spring-ai` /
+`jev`) is what makes the two comparable across runs. The meter is read on the
+worker's management port: at
+`http://localhost:8082/actuator/metrics/triage.owner.selection` for a quick
+COUNT/TOTAL_TIME/MAX reading, and at
+`http://localhost:8082/actuator/prometheus` for a scrape, which serves the
+Prometheus text format and OpenMetrics alike
+(`Accept: application/openmetrics-text`) and names the timer
+`triage_owner_selection_seconds_*` with `engine` as a label. The registry in
+use is `io.micrometer:micrometer-registry-prometheus`, and
+`management.metrics.distribution` publishes the timer as a
+percentiles-histogram bounded to `100ms`–`30s`: p50/p95 come from
+`histogram_quantile` over the `_bucket` series, which aggregates across several
+workers where application-computed `percentiles` would not. The
+instrumentation is deliberately plain Micrometer — no `@Timed`, no AOP, no
+proxy — so the worker stays GraalVM-native-friendly.
 
 ## Modules
 

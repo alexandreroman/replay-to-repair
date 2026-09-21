@@ -49,5 +49,6 @@
 - [Engine credentials and model ids are environment variables](references/engine-env-var-naming.md) — provider-named vars, model default in YAML
 - [Temporal owns every retry](references/temporal-owns-every-retry.md) — the Activity retry policy is the only retry; no client-side retry
 - [Client timeouts fit the Activity deadline](references/client-timeouts-inside-activity-deadline.md) — both engines time out below the 30s start-to-close
+- [Metrics use the plain Micrometer API](references/native-friendly-micrometer-metrics.md) — constructor-injected MeterRegistry, no @Timed/AOP/proxies; native-friendly
 - [Worker auto-discovery](references/temporal-workers-auto-discovery-config.md) — workflow-packages scans @WorkflowImpl; activity beans need the flag
 - [README screenshot border treatment](references/readme-screenshot-border.md) — rounded #828892 frame, transparent corners, geometry scaled to image width

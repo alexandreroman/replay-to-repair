@@ -61,11 +61,35 @@
         </dependency>
 
         <!-- RestClient for the Jev engine's call to TypeSafe's systemone
-             endpoint. This starter brings spring-web and Jackson without an
-             embedded servlet container: the worker serves no HTTP itself. -->
+             endpoint. This starter brings spring-web and Jackson; the servlet
+             container the worker listens on comes from the web starter below. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-restclient</artifactId>
+        </dependency>
+
+        <!-- Actuator publishes the application's metrics over HTTP, one
+             plain reading per meter under /actuator/metrics. The web starter
+             below provides the servlet container those endpoints need: the
+             actuator starter on its own exposes nothing over HTTP. The plain
+             Micrometer API used to record the metrics needs no AOP, proxying
+             or reflection. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Prometheus meter registry: the registry the application records
+             into, and what turns on the OpenMetrics/Prometheus scrape
+             endpoint at /actuator/prometheus. The version comes from the
+             Spring Boot BOM. -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <dependency>

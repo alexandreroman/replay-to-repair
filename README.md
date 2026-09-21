@@ -120,13 +120,16 @@ narrative.
 
 ### Ports
 
-The gateway on `8080` is the single browser entry point.
+The gateway on `8080` is the single browser entry point. The worker's own
+application HTTP port is ephemeral and unused, so only its management port
+appears here.
 
-| Port   | Service                                                      |
-| ------ | ------------------------------------------------------------ |
-| `8080` | Gateway: dashboard, `/api/*` → backend, `/temporal` → Web UI |
-| `7233` | Temporal gRPC (workers and the backend connect here)         |
-| `8081` | Local backend, `make dev` only (the gateway proxies to it)   |
+| Port   | Service                                                           |
+| ------ | ----------------------------------------------------------------- |
+| `8080` | Gateway: dashboard, `/api/*` → backend, `/temporal` → Web UI      |
+| `7233` | Temporal gRPC (workers and the backend connect here)              |
+| `8081` | Local backend, `make dev` only (the gateway proxies to it)        |
+| `8082` | Worker management port: `health`, `info`, `metrics`, `prometheus` |
 
 ## The demo
 
@@ -225,14 +228,15 @@ real are tagged `live` and excluded by default, so the suite needs no API key.
 
 ## Configuration
 
-| Variable             | Description                          | Default           |
-| -------------------- | ------------------------------------ | ----------------- |
-| `ANTHROPIC_API_KEY`  | Anthropic key for the default engine | (required)        |
-| `ANTHROPIC_MODEL`    | Claude model used for owner triage   | `claude-sonnet-5` |
-| `TYPESAFE_API_KEY`   | TypeSafe key for the Jev engine      | (jev only)        |
-| `TYPESAFE_MODEL`     | Jev model used for owner triage      | `jev-latest`      |
-| `TEMPORAL_ADDRESS`   | Temporal gRPC endpoint               | `localhost:7233`  |
-| `TEMPORAL_NAMESPACE` | Temporal namespace                   | `default`         |
+| Variable                 | Description                          | Default           |
+| ------------------------ | ------------------------------------ | ----------------- |
+| `ANTHROPIC_API_KEY`      | Anthropic key for the default engine | (required)        |
+| `ANTHROPIC_MODEL`        | Claude model used for owner triage   | `claude-sonnet-5` |
+| `TYPESAFE_API_KEY`       | TypeSafe key for the Jev engine      | (jev only)        |
+| `TYPESAFE_MODEL`         | Jev model used for owner triage      | `jev-latest`      |
+| `TEMPORAL_ADDRESS`       | Temporal gRPC endpoint               | `localhost:7233`  |
+| `TEMPORAL_NAMESPACE`     | Temporal namespace                   | `default`         |
+| `WORKER_MANAGEMENT_PORT` | Worker Actuator/management HTTP port | `8082`            |
 
 The Jev endpoint (`triage.jev.base-url`) is not an environment variable: it
 lives in

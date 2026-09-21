@@ -6,6 +6,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -33,15 +36,26 @@ class JevOwnerSelector implements OwnerSelector {
     // Built once at startup: the roster does not change while the worker runs.
     private final JevQuestion.Choice question;
     private final Map<String, String> specialtiesByOwner;
+    private final Timer selectionTimer;
 
-    JevOwnerSelector(JevClient jevClient, TriageRosterProperties roster) {
+    JevOwnerSelector(JevClient jevClient, TriageRosterProperties roster, MeterRegistry meterRegistry) {
         this.jevClient = jevClient;
         this.question = new JevQuestion.Choice(INSTRUCTIONS, buildCriteria(roster));
         this.specialtiesByOwner = buildSpecialties(roster);
+        // The meter is shared with the other engine, the "engine" tag keeps the two series apart.
+        this.selectionTimer = Timer.builder("triage.owner.selection")
+                .description("Time taken by the selection engine to pick an owner")
+                .tag("engine", "jev")
+                .register(meterRegistry);
     }
 
     @Override
     public Optional<OwnerAssignment> select(Issue issue) {
+        // A selection that throws is measured as well: Timer#record stops its sample in a finally.
+        return selectionTimer.record(() -> selectOwner(issue));
+    }
+
+    private Optional<OwnerAssignment> selectOwner(Issue issue) {
         var state = Map.of(
                 "issue_title", issue.issueTitle(),
                 "issue_description", issue.issueDescription());
