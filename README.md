@@ -51,8 +51,9 @@ and it ships to production faster.
 ## Getting Started
 
 ```bash
-# 1. Provide your Anthropic API key (git-ignored)
-echo 'ANTHROPIC_API_KEY=your-api-key' > .env
+# 1. Create your local configuration (git-ignored) and set
+#    ANTHROPIC_API_KEY in it
+cp .env.example .env
 
 # 2. Launch the app (Ctrl-C to stop the local processes)
 make app-up
@@ -217,10 +218,10 @@ make test-live   # add the worker tests that call the real selection engines
 make build       # build the production JARs for both modules
 ```
 
-`make test` runs offline — the two tests that call a selection engine for real
-are tagged `live` and excluded by default, so the suite needs no API key.
+`make test` runs offline — the three tests that call a selection engine for
+real are tagged `live` and excluded by default, so the suite needs no API key.
 `make test-live` adds them back and needs `ANTHROPIC_API_KEY` and
-`TYPESAFE_AI_API_KEY` in `.env`.
+`TYPESAFE_API_KEY` in `.env`.
 
 ## Configuration
 
@@ -238,7 +239,8 @@ lives in
 [`application-jev.yaml`](worker/src/main/resources/application-jev.yaml).
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it
-automatically.
+automatically. [`.env.example`](.env.example) is the annotated template for
+that file — copy it to `.env` and fill in the key of the engine you run.
 
 ## Architecture
 
