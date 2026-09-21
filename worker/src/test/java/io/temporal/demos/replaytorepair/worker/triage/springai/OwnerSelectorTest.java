@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,7 @@ import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@Tag("live")
 class OwnerSelectorTest {
     // The real Spring-wired bean, with the ChatClient from the application context.
     @Autowired

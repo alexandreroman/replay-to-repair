@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import io.temporal.client.WorkflowClient;
@@ -13,8 +14,13 @@ import io.temporal.client.WorkflowOptions;
 /**
  * Runs the full {@link IssueTriageWorkflow} end to end against the in-memory Temporal test server
  * that the temporal-spring-boot-starter starts under the {@code test} profile (see {@code
- * src/test/resources/application-test.yaml}), triaging a backend issue — alice's domain in the
- * triage roster — and asserting the workflow assigns it to {@code alice} and completes.
+ * src/test/resources/application-test.yaml}), asserting the workflow assigns the issue to {@code
+ * alice} and completes.
+ *
+ * <p>Owner selection runs on {@link FixedOwnerSelector}, so the workflow exercises no selection
+ * engine and no network endpoint; the assignment still comes out as alice because the Activity
+ * overwrites whatever the engine returned. What remains of the test's runtime is the Activity's
+ * simulated work ({@code NOTIFY_DELAY} and {@code TICKET_UPDATE_DELAY}, two seconds each).
  *
  * <p>The {@code test} profile overlays the module's main config, so the worker-auto-discovery
  * packages come from {@code application.yaml} and the starter registers the {@code
@@ -22,6 +28,7 @@ import io.temporal.client.WorkflowOptions;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(FixedOwnerSelectorConfiguration.class)
 class IssueTriageWorkflowTest {
     // The starter wires this WorkflowClient to the in-memory test server the worker polls.
     @Autowired

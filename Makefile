@@ -228,6 +228,13 @@ test: ## Run the test suite for both Maven modules
 	cd backend && ./mvnw -B test
 	cd worker && ./mvnw -B test
 
+# The worker excludes the `live`-tagged tests by default, so `make test` runs
+# offline. This target clears that exclusion and calls the real Anthropic and
+# TypeSafe APIs, which needs both keys in .env.
+.PHONY: test-live
+test-live: ## Run the worker tests that call the real owner-selection engines
+	cd worker && ./mvnw -B test -Dexcluded.test.groups=
+
 ##@ Build
 
 .PHONY: build
