@@ -10,8 +10,8 @@ See [README.md](README.md) for full documentation.
 
 - Java 25, Spring Boot 4.x (two independent Maven projects, no shared parent)
 - Temporal Java SDK + `temporal-spring-boot-starter`
-- Spring AI (Anthropic / Claude) and Jev (TypeSafe's own API) in the
-  worker
+- Spring AI in the worker: the Anthropic starter (Claude) and the
+  spring-ai-community TypeSafe starter (Jev)
 - Caddy gateway, static frontend (Tailwind Play CDN + Alpine.js)
 
 ## Build & run
@@ -34,10 +34,10 @@ configuration table at the same time. In `dev`, the local backend listens on
 `8081` and the containerized gateway proxies to it via
 `host.containers.internal`.
 
-`make test` runs offline: the worker's three API-calling tests
-(`OwnerSelectorTest`, `JevOwnerSelectorTest`, `JevClientTest`) carry the JUnit
-`live` tag and the worker pom excludes that tag by default, so the default run
-makes no network call and needs no API key. They are opt-in through `make
+`make test` runs offline: the worker's two API-calling tests
+(`OwnerSelectorTest`, `JevOwnerSelectorTest`) carry the JUnit `live` tag and
+the worker pom excludes that tag by default, so the default run makes no
+network call and needs no API key. They are opt-in through `make
 test-live` (`-Dexcluded.test.groups=`), which needs both keys in `.env`; CI
 clears the same property and keeps running them. Tests that need an
 `OwnerSelector` without an engine import `FixedOwnerSelectorConfiguration`, a
@@ -72,42 +72,44 @@ public path.
 Owner selection sits behind the `OwnerSelector` interface, with one
 implementation active per profile:
 
-- any profile other than `jev` — `SpringAiOwnerSelector`
+- any profile other than `jev` — `LlmOwnerSelector`
   (`@Profile("!jev")`), an LLM call through Spring AI to Anthropic, with the
   roster loaded model-side from `SKILL.md` via `SkillsTool`. This is the
   default.
 - `jev` — `JevOwnerSelector`, which asks Jev a typed `choice` question through
-  `JevClient` over TypeSafe's own API. Jev is a decision model: it calls no
+  the `spring-ai-typesafe` starter. Jev is a decision model: it calls no
   tools and writes no prose, so the roster is configured in
   `application-jev.yaml` (`triage.roster`) and the assignment reason is
   composed in Java from the roster entry and the reported confidence.
 
 Each engine lives in its own sub-package of `worker.triage`, together with its
-Spring configuration and its tests: `triage.springai`
-(`SpringAiOwnerSelector`, `ChatClientConfiguration`) and `triage.jev`
-(`JevOwnerSelector`, `JevConfiguration`, `JevProperties`,
-`TriageRosterProperties`). The Jev HTTP client itself sits one level down in
-`triage.jev.client` (`JevClient`, `JevQuestion`, `JevAnswer`): it owns the
-wire format and its own connection settings, and covers Jev's three question
-types — `choice`, `score` and `noul` — even though owner selection only asks a
-`choice`. The `triage` package itself holds what both engines share — the
-`OwnerSelector` contract, `OwnerAssignment`, `Issue` — plus the Workflow and
-Activity implementations the Temporal worker auto-discovers.
+Spring configuration and its tests: `triage.llm` (`LlmOwnerSelector`,
+`ChatClientConfiguration`) and `triage.jev` (`JevOwnerSelector`,
+`JevConfiguration`, `TriageRosterProperties`). The Jev HTTP client is the
+`TypeSafeClient` the `spring-ai-starter-typesafe` starter auto-configures from
+`spring.ai.typesafe.*`: it owns the wire format and its own connection
+settings, and covers Jev's three question types — `choice`, `score` and
+`noul` — even though owner selection only asks a `choice`. The `triage`
+package itself holds what both engines share — the `OwnerSelector` contract,
+`OwnerAssignment`, `Issue` — plus the Workflow and Activity implementations
+the Temporal worker auto-discovers.
 
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
 and a `TYPESAFE_API_KEY` in `.env`.
 
 Each engine registers its own Micrometer `Timer` in its constructor, against
-the shared meter name `triage.owner.selection`; the `engine` tag (`spring-ai` /
-`jev`) is what makes the two comparable across runs. The meter is read on the
+the shared meter name `triage.owner.selection`; the `engine` tag (`llm` /
+`jev`) is what makes the two comparable across runs, and a `model` tag carries
+the model id each engine calls, read from `ChatModel#getDefaultOptions()` and
+`TypeSafeClient#defaultModel()` so it cannot drift from what is sent. The meter is read on the
 worker's management port: at
 `http://localhost:8082/actuator/metrics/triage.owner.selection` for a quick
 COUNT/TOTAL_TIME/MAX reading, and at
 `http://localhost:8082/actuator/prometheus` for a scrape, which serves the
 Prometheus text format and OpenMetrics alike
 (`Accept: application/openmetrics-text`) and names the timer
-`triage_owner_selection_seconds_*` with `engine` as a label. The registry in
+`triage_owner_selection_seconds_*` with `engine` and `model` as labels. The registry in
 use is `io.micrometer:micrometer-registry-prometheus`, and
 `management.metrics.distribution` publishes the timer as a
 percentiles-histogram bounded to `100ms`–`30s`: p50/p95 come from

@@ -14,8 +14,10 @@ spring:
       register-activity-beans: true
   # Anthropic (Claude) via Spring AI powers the owner-selection Activity on
   # every profile other than jev, so ANTHROPIC_API_KEY is required there. The
-  # jev profile selects the Jev engine through TypeSafe's own API instead and
-  # does not read this section.
+  # jev profile selects the Jev engine instead, which reaches TypeSafe's
+  # System One API through the spring-ai-starter-typesafe starter, and does
+  # not read this section: its settings live under spring.ai.typesafe.* in
+  # application-jev.yaml.
   ai:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}

@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage.springai;
+package io.temporal.demos.replaytorepair.worker.triage.llm;
 
 import java.util.List;
 

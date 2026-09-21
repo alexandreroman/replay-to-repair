@@ -41,8 +41,8 @@ and it ships to production faster.
     through Spring AI
   - **TypeSafe** (`TYPESAFE_API_KEY`) — the Jev engine (`make app-up-jev` /
     `make dev-jev`) calls [Jev](https://typesafe.ai), TypeSafe's decision
-    model, through TypeSafe's own API at `https://api.typesafe.ai`. This
-    profile needs no Anthropic key
+    model, through the `spring-ai-typesafe` starter. This profile needs no
+    Anthropic key
 - **Temporal CLI** (optional) — used by `make capture-history` and the manual
   capture route to export a Workflow's event history; the Web UI at
   <http://localhost:8080/temporal> is another way and covers the rest of the
@@ -99,13 +99,14 @@ containers. Run `make` (or `make help`) to list every target.
 Owner selection sits behind the `OwnerSelector` interface, with one
 implementation active per Spring profile:
 
-- **Spring AI + Claude** — the default (`@Profile("!jev")`). The roster is
-  read model-side: the model loads
+- **LLM + Claude** — the default (`@Profile("!jev")`), through the Spring AI
+  Anthropic starter. The roster is read model-side: the model loads
   [`SKILL.md`](worker/src/main/resources/skills/issue-triage/SKILL.md) as a
   tool and answers with the chosen owner and a one-sentence reason.
-- **Jev** — the `jev` profile. A `RestClient` call to Jev, TypeSafe's
-  decision model, through TypeSafe's own API. Jev calls no tools and writes
-  no prose, so the roster is configured Java-side in
+- **Jev** — the `jev` profile, through the spring-ai-community
+  [`spring-ai-typesafe`](https://github.com/spring-ai-community/spring-ai-typesafe)
+  starter: a typed `choice` question to Jev, TypeSafe's decision model. Jev
+  calls no tools and writes no prose, so the roster is configured Java-side in
   [`application-jev.yaml`](worker/src/main/resources/application-jev.yaml)
   (`triage.roster`), and the assignment reason is composed from the matched
   roster entry and the reported confidence.
@@ -221,7 +222,7 @@ make test-live   # add the worker tests that call the real selection engines
 make build       # build the production JARs for both modules
 ```
 
-`make test` runs offline — the three tests that call a selection engine for
+`make test` runs offline — the two tests that call a selection engine for
 real are tagged `live` and excluded by default, so the suite needs no API key.
 `make test-live` adds them back and needs `ANTHROPIC_API_KEY` and
 `TYPESAFE_API_KEY` in `.env`.
@@ -238,8 +239,9 @@ real are tagged `live` and excluded by default, so the suite needs no API key.
 | `TEMPORAL_NAMESPACE`     | Temporal namespace                   | `default`         |
 | `WORKER_MANAGEMENT_PORT` | Worker Actuator/management HTTP port | `8082`            |
 
-The Jev endpoint (`triage.jev.base-url`) is not an environment variable: it
-lives in
+The Jev endpoint is not an environment variable: it stays on the
+`spring-ai-typesafe` default (`https://api.typesafe.ai`), overridable through
+`spring.ai.typesafe.base-url` in
 [`application-jev.yaml`](worker/src/main/resources/application-jev.yaml).
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it

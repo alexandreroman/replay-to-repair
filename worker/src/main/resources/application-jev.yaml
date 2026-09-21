@@ -1,32 +1,31 @@
 # Overlay for the `jev` profile: owner selection runs through Jev, TypeSafe's
-# decision model, reached through TypeSafe's own API. The Spring AI engine and
-# its ChatClient are not part of this profile, so no Anthropic key is needed.
+# decision model, reached over the spring-ai-starter-typesafe starter. The LLM
+# engine and its ChatClient are not part of this profile, so no Anthropic key
+# is needed.
 spring:
-  http:
-    clients:
-      # Pin the JDK client: it does not retry a POST, and pinning keeps a future
-      # transitive Apache HttpClient from reintroducing retries. Temporal's
-      # Activity retry policy is the only retry in this system.
-      imperative:
-        factory: jdk
-      # A 20s total budget (5s connect + 15s read) matches the one the
-      # Spring AI engine applies in application.yaml, so both engines give up
-      # at the same point, inside the Activity's 30s start-to-close timeout
-      # (IssueTriageWorkflowImpl): a stalled call fails here with a cause
-      # that names the real problem instead of an opaque ActivityTaskTimedOut
-      # from Temporal's own deadline.
-      connect-timeout: 5s
-      read-timeout: 15s
-      redirects: dont-follow
+  ai:
+    typesafe:
+      api-key: ${TYPESAFE_API_KEY:}
+      model: ${TYPESAFE_MODEL:jev-latest}
+      # A 20s timeout matches the one the LLM engine applies in
+      # application.yaml, and stays inside the Activity's 30s start-to-close
+      # timeout (IssueTriageWorkflowImpl): a stalled call fails here with a
+      # cause that names the real problem instead of an opaque
+      # ActivityTaskTimedOut from Temporal's own deadline. The starter applies
+      # it to the HTTP client it builds as one deadline over the whole
+      # exchange, covering connect, TLS, write, response and body, so the 20s
+      # is the entire budget with no phase running outside it.
+      timeout: 20s
+      retry:
+        # Turn off the SDK's own retry (default 2): Temporal's Activity retry
+        # policy is the only retry in this system, and a second retry layer
+        # underneath it would obscure how many attempts a triage actually took.
+        max-retries: 0
 
 triage:
-  jev:
-    base-url: https://api.typesafe.ai/v1
-    model: ${TYPESAFE_MODEL:jev-latest}
-    api-key: ${TYPESAFE_API_KEY:}
   # The roster the Jev question offers as its choice criteria. It mirrors the
-  # `## Owners` table of the issue-triage skill, which the Spring AI engine's
-  # model reads instead; TriageRosterConsistencyTest holds the two in step.
+  # `## Owners` table of the issue-triage skill, which the LLM engine's model
+  # reads instead; TriageRosterConsistencyTest holds the two in step.
   roster:
     owners:
       - name: alice

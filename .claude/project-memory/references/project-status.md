@@ -6,7 +6,7 @@ type: project
 
 # Project status
 
-As of 2026-09-21, the demo is feature-complete and both Maven modules build
+As of 2026-09-22, the demo is feature-complete and both Maven modules build
 green.
 
 Implemented and committed:
@@ -28,28 +28,31 @@ Implemented and committed:
   dashboard.
 - Owner selection runs through one of two engines behind the `OwnerSelector`
   interface, selected by Spring profile (see [[skills-tool-owner-roster]] and
-  [[demo-design-constraints]]). `SpringAiOwnerSelector` (`@Profile("!jev")`, the
+  [[demo-design-constraints]]). `LlmOwnerSelector` (`@Profile("!jev")`, the
   default) calls Claude through Spring AI, with the roster loaded model-side
   from `SKILL.md` via `SkillsTool`; its output contract covers the chosen owner
   (or the `none` token when no owner fits) plus a one-sentence reason, parsed
   defensively with Jackson (unknown fields ignored, explicit property names,
   common key variants mapped via aliases). `JevOwnerSelector`
-  (`@Profile("jev")`) calls Jev, a decision model, through TypeSafe's own API at
+  (`@Profile("jev")`) calls Jev, a decision model, at
   `POST https://api.typesafe.ai/v1/systemone`, with the roster configured in
   `application-jev.yaml` (`triage.roster`); because Jev calls no tools and
   writes no prose, the assignment reason is composed in Java from the matched
   roster entry's specialties and the reported confidence. The HTTP call goes
-  through `JevClient` (`triage.jev.client`), which owns the wire format and
-  its own connection settings and covers Jev's three question types —
-  `choice`, `score` and `noul`, batched in one call — though owner selection
-  asks only a `choice` (see [[jev-wire-format]]).
+  through the `TypeSafeClient` that the `spring-ai-starter-typesafe` starter
+  auto-configures from `spring.ai.typesafe.*`: it owns the wire format and
+  covers Jev's three question types — `choice`, `score` and `noul`, batched in
+  one call — though owner selection asks only a `choice` (see
+  [[jev-wire-format]]).
   `TriageRosterConsistencyTest` keeps the SKILL.md table and the configured
   roster in step, comparing owner names, specialties, and preferences cell by
   cell. Both engines map `none` to an empty `Optional` (the deliberate
   no-suitable-owner verdict) and throw on a malformed answer.
 - Owner selection is timed per engine with the plain Micrometer API: each
   engine registers its own `Timer` in its constructor on the shared
-  `triage.owner.selection` meter name, told apart by the `engine` tag. Actuator
+  `triage.owner.selection` meter name, told apart by the `engine` tag
+  (`llm` / `jev`) and labelled with a `model` tag read from the client that
+  holds the effective setting. Actuator
   exposes it both on the `metrics` endpoint and, through
   `io.micrometer:micrometer-registry-prometheus`, as a Prometheus/OpenMetrics
   scrape at `/actuator/prometheus`, where `management.metrics.distribution`
@@ -57,8 +60,11 @@ Implemented and committed:
   come from `histogram_quantile` over the `_bucket` series, which aggregates
   across workers (see [[native-friendly-micrometer-metrics]]).
   `JevOwnerSelectorOfflineTest` pins
-  the meter name and the `engine=jev` tag, the count after a successful
-  selection, and that a failing selection is recorded too. The worker's
+  the meter name, the `engine=jev` and `model` tags, the count after a
+  successful selection, and that a failing selection is recorded too;
+  `OwnerSelectorProfileTest` pins the `engine=llm` series the same way, with
+  the model id asserted as present and non-blank rather than as a literal,
+  because a developer's `.env` supplies `ANTHROPIC_MODEL` in that context. The worker's
   application HTTP stack is unused and takes an ephemeral port
   (`server.port: 0`), while Actuator listens on its own
   `management.server.port`, which the Makefile owns: `WORKER_MANAGEMENT_PORT ?=
@@ -102,34 +108,37 @@ Implemented and committed:
   `live`-tagged engine tests to the run; it builds no container images. The
   worker's live-tagged tests read `ANTHROPIC_API_KEY` and
   `TYPESAFE_API_KEY` from repository secrets of the same names — the former
-  for the default Spring AI engine, the latter for the jev-profile tests calling
+  for the default LLM engine, the latter for the jev-profile tests calling
   Jev through TypeSafe's own API — and both secrets must be configured for the
   worker job to pass. A `paths-ignore` filter on the push/PR triggers skips
   runs for commits that touch only docs or UI (`**.md`, `.claude/**`,
   `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
   is unfiltered so manual runs always run.
 
-The worker suite is 52/52 green with the intentional bug committed. `make
-test` runs 43 of them offline in about eight seconds: `OwnerSelectorTest`,
-`JevOwnerSelectorTest` and `JevClientTest` carry the JUnit `live` tag and
-`worker/pom.xml` excludes that tag through the `excluded.test.groups`
-property, so the default run makes no network call and needs no API key.
-`make test-live` and CI clear the property and run all 52.
+The worker suite is 35/35 green with the intentional bug committed. `make
+test` runs 27 of them offline in about eight seconds: `OwnerSelectorTest` and
+`JevOwnerSelectorTest` carry the JUnit `live` tag and `worker/pom.xml`
+excludes that tag through the `excluded.test.groups` property, so the default
+run makes no network call and needs no API key. `make test-live` and CI clear
+the property and run all 35.
 `OwnerSelectorTest` (a `@SpringBootTest` exercising the real
-`SpringAiOwnerSelector` bean with the injected `ChatClient`) and
+`LlmOwnerSelector` bean with the injected `ChatClient`) and
 `JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev
 through TypeSafe's own API for real) each assert genuine engine-driven owner
 selection per issue category (e.g. alice for backend issues, carol for security
 issues), unaffected by the short-circuit. `JevOwnerSelectorOfflineTest`
 exercises `JevOwnerSelector`'s response-parsing branches (the `none` verdict, a
-blank or off-roster choice, a missing answer, an HTTP error, unknown root
-fields) against a `MockRestServiceServer` stand-in for TypeSafe's API, with no
-network call and no API key. `JevClientOfflineTest` pins the wire format
-itself against JSON captured from the live API — the criteria shape and the
-answer shape of each question type, a mixed batch, and the client's error
-paths — while the live `JevClientTest` checks all three answer shapes against
-the real API in a single call. `OwnerSelectorProfileTest` pins
-`SpringAiOwnerSelector` as the default
+blank or off-roster choice, an answerless response, an HTTP error, unknown
+root fields) against a `MockRestServiceServer` stand-in for TypeSafe's API,
+with no network call and no API key: it hands the mock-bound
+`RestClient.Builder` to a `TypeSafeClient` of its own, built with
+`RetryPolicy.noRetry()` so a mocked failure reaches the assertion once. It
+also pins the request the engine sends — the `state` keys, the criteria built
+from the roster, and the order the options reach the model.
+`JevClientSettingsTest` boots the `jev` profile with a dummy key and pins the
+two settings the Activity's retry and deadline guarantees rest on:
+`retryPolicy().maxRetries()` at 0 and `timeout()` at 20s.
+`OwnerSelectorProfileTest` pins `LlmOwnerSelector` as the default
 engine when no profile is set. `TriageActivitiesImplTest` runs under the `test`
 profile with `OwnerSelector` mocked to return a different owner (carol),
 proving the Activity's override: it asserts the Activity still returns
