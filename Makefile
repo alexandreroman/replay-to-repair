@@ -43,6 +43,11 @@ GATEWAY_PORT ?= 8080
 # worktree) wins; this is only the fallback for a plain checkout.
 TEMPORAL_GRPC_PORT ?= 7233
 
+# Management port of the local worker, where Actuator serves the metrics
+# scrape. Conditional for the same reason: a value imported from .env (a
+# Casper worktree) wins; this is only the fallback for a plain checkout.
+WORKER_MANAGEMENT_PORT ?= 8082
+
 # Event-history fixture that IssueTriageWorkflowReplayTest reads and that
 # `make capture-history` writes.
 REPLAY_FIXTURE := worker/src/test/resources/history/issue-triage.json
@@ -70,6 +75,7 @@ define show_urls
 	@echo "Open:"
 	@echo "  Dashboard         http://localhost:$(GATEWAY_PORT)"
 	@echo "  Temporal Web UI   http://localhost:$(GATEWAY_PORT)/temporal"
+	@echo "  Worker Metrics    http://localhost:$(WORKER_MANAGEMENT_PORT)/actuator/prometheus"
 endef
 
 # Same endpoints, published to the Casper info panel so they stay reachable once
@@ -95,6 +101,7 @@ define casper_info
 			'| --- | --- |' \
 			'| Dashboard | <http://localhost:$(GATEWAY_PORT)> |' \
 			'| Temporal Web UI | <http://localhost:$(GATEWAY_PORT)/temporal> |' \
+			'| Worker Metrics | <http://localhost:$(WORKER_MANAGEMENT_PORT)/actuator/prometheus> |' \
 			'' \
 			'## Temporal CLI' \
 			'' \
@@ -134,7 +141,7 @@ dev: infra-up ## Run the app with backend + worker LOCAL (hot reload)
 	$(call casper_info,dev mode — backend and worker run locally,Stop the containers with `make infra-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
 		( cd backend && PORT=$(DEV_BACKEND_PORT) ./mvnw -q spring-boot:run; kill 0 ) & \
-		( cd worker && $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
+		( cd worker && WORKER_MANAGEMENT_PORT=$(WORKER_MANAGEMENT_PORT) $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
 
 .PHONY: dev-jev
@@ -147,7 +154,7 @@ app-up: ## Run the app with backend CONTAINERIZED; worker stays local (hot reloa
 	$(show_urls)
 	$(call casper_info,demo mode — backend containerized and worker local,Tear down the containers with `make app-down`.)
 	@trap 'kill 0' EXIT INT TERM; \
-		( cd worker && $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
+		( cd worker && WORKER_MANAGEMENT_PORT=$(WORKER_MANAGEMENT_PORT) $(worker_profile_env)./mvnw -q spring-boot:run; kill 0 ) & \
 		wait
 
 .PHONY: app-up-jev
@@ -164,7 +171,7 @@ app-down: ## Stop and remove the containers
 # Casper workspace setup hook: give each parallel workspace (Git worktree) its
 # own host ports so several worktrees can run the demo at once without
 # colliding. Runs once at workspace creation. No-op in a plain checkout, where
-# CASPER_PORT is unset and the compose/Makefile defaults (8080/7233/8081)
+# CASPER_PORT is unset and the compose/Makefile defaults (8080/7233/8081/8082)
 # apply unchanged.
 #
 # Ports are derived from the Casper-injected base CASPER_PORT (Casper reserves
@@ -172,6 +179,7 @@ app-down: ## Stop and remove the containers
 #   +0  gateway (browser entry point)
 #   +1  Temporal gRPC (local worker + local backend connect here)
 #   +2  local backend in dev mode
+#   +3  worker management port (Actuator, owner-selection timing)
 # The Temporal Web UI needs no port of its own: it rides the gateway port (+0)
 # at /temporal.
 # All variables are $$-escaped so the shell — not Make — expands them.
@@ -182,8 +190,9 @@ worktree-init: ## Remap host ports for a Casper worktree and pre-compile both mo
 		gateway_port=$$CASPER_PORT; \
 		temporal_grpc_port=$$((CASPER_PORT + 1)); \
 		dev_backend_port=$$((CASPER_PORT + 2)); \
+		worker_management_port=$$((CASPER_PORT + 3)); \
 		if [ -f "$$env_file" ]; then \
-			grep -vE '^(GATEWAY_PORT|TEMPORAL_GRPC_PORT|DEV_BACKEND_PORT|TEMPORAL_ADDRESS)=' "$$env_file" > "$$env_file.casper.tmp" || true; \
+			grep -vE '^(GATEWAY_PORT|TEMPORAL_GRPC_PORT|DEV_BACKEND_PORT|WORKER_PORT|WORKER_MANAGEMENT_PORT|TEMPORAL_ADDRESS)=' "$$env_file" > "$$env_file.casper.tmp" || true; \
 			mv "$$env_file.casper.tmp" "$$env_file"; \
 		fi; \
 		{ \
@@ -191,9 +200,10 @@ worktree-init: ## Remap host ports for a Casper worktree and pre-compile both mo
 			echo "GATEWAY_PORT=$$gateway_port"; \
 			echo "TEMPORAL_GRPC_PORT=$$temporal_grpc_port"; \
 			echo "DEV_BACKEND_PORT=$$dev_backend_port"; \
+			echo "WORKER_MANAGEMENT_PORT=$$worker_management_port"; \
 			echo "TEMPORAL_ADDRESS=localhost:$$temporal_grpc_port"; \
 		} >> "$$env_file"; \
-		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port"; \
+		echo "Casper: this worktree uses gateway=$$gateway_port temporal-grpc=$$temporal_grpc_port backend-dev=$$dev_backend_port worker-mgmt=$$worker_management_port"; \
 	fi
 	cd backend && ./mvnw -B -DskipTests compile
 	cd worker && ./mvnw -B -DskipTests compile

@@ -11,6 +11,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import java.util.List;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -82,6 +84,8 @@ class JevOwnerSelectorOfflineTest {
             }
             """;
 
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     private final TriageRosterProperties roster = new TriageRosterProperties(List.of(
             new TriageRosterProperties.Owner(
                     "alice",
@@ -101,6 +105,15 @@ class JevOwnerSelectorOfflineTest {
         assertThat(assignment.reason())
                 .contains("backend, APIs, relational databases")
                 .contains("(confidence 0.87)");
+    }
+
+    @Test
+    void timesTheSelectionUnderTheJevEngineTag() {
+        var selector = selectorRespondingWith(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
+
+        selector.select(issue).orElseThrow();
+
+        assertThat(jevTimerCount()).isEqualTo(1);
     }
 
     @Test
@@ -135,7 +148,7 @@ class JevOwnerSelectorOfflineTest {
                 .andExpect(content().string(stringContainsInOrder("\"alice\"", "\"carol\"", "\"none\"")))
                 .andRespond(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
         var client = new JevClient(builder, BASE_URL, "dummy-key", "jev-latest");
-        assertThat(new JevOwnerSelector(client, TERSE_ROSTER).select(issue)).isPresent();
+        assertThat(new JevOwnerSelector(client, TERSE_ROSTER, meterRegistry).select(issue)).isPresent();
     }
 
     @Test
@@ -194,12 +207,19 @@ class JevOwnerSelectorOfflineTest {
     void httpServerErrorThrows() {
         var selector = selectorRespondingWith(withServerError());
         assertThatThrownBy(() -> selector.select(issue)).isInstanceOf(RestClientException.class);
+        // The attempt is timed even though it fails, so a broken engine shows up in the series.
+        assertThat(jevTimerCount()).isEqualTo(1);
+    }
+
+    private long jevTimerCount() {
+        return meterRegistry.get("triage.owner.selection").tag("engine", "jev").timer().count();
     }
 
     private JevOwnerSelector selectorRespondingWith(ResponseCreator responseCreator) {
         var builder = RestClient.builder();
         var server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo(SYSTEMONE_URL)).andRespond(responseCreator);
-        return new JevOwnerSelector(new JevClient(builder, BASE_URL, "dummy-key", "jev-latest"), roster);
+        return new JevOwnerSelector(
+                new JevClient(builder, BASE_URL, "dummy-key", "jev-latest"), roster, meterRegistry);
     }
 }

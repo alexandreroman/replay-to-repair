@@ -37,8 +37,43 @@ triage:
   skills:
     location: classpath:/skills
 
+# The worker serves no application HTTP of its own, so the spring-web connector
+# takes an ephemeral port that nothing ever connects to: it is neither mapped
+# nor documented.
+server:
+  port: 0
+
 # Emit ECS-structured console logs so the worker matches the backend.
 logging:
   structured:
     format:
       console: ecs
+
+# Actuator listens on a port of its own and publishes the application's metrics
+# there: 8080 is the gateway and 8081 the local dev backend, which runs on the
+# host alongside the worker. Every meter has a plain reading under
+# /actuator/metrics, and the whole registry is scraped at /actuator/prometheus,
+# which serves the Prometheus text format and OpenMetrics alike through content
+# negotiation (Accept: application/openmetrics-text).
+management:
+  server:
+    port: ${WORKER_MANAGEMENT_PORT:8082}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  # Histogram buckets for triage.owner.selection, instead of percentiles
+  # computed inside the worker: buckets add up across processes, so p50/p95 hold
+  # with several workers running at once, computed server-side with e.g.
+  # histogram_quantile(0.95, sum by (le, engine) (rate(triage_owner_selection_seconds_bucket[5m]))).
+  # The bounds decide how many buckets a scrape carries, and 100ms-30s frames
+  # the range a selection call falls in: the HTTP client budget is 20s and the
+  # Activity's start-to-close timeout 30s.
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[triage.owner.selection]": true
+      minimum-expected-value:
+        "[triage.owner.selection]": 100ms
+      maximum-expected-value:
+        "[triage.owner.selection]": 30s

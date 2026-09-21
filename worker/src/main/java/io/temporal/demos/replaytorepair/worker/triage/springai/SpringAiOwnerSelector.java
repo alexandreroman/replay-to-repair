@@ -6,6 +6,9 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -21,14 +24,25 @@ class SpringAiOwnerSelector implements OwnerSelector {
     private static final String NO_SUITABLE_OWNER = "none";
 
     private final ChatClient chatClient;
+    private final Timer selectionTimer;
 
     // The ChatClient is injected directly (not the builder) so tests can pass a mock.
-    SpringAiOwnerSelector(ChatClient chatClient) {
+    SpringAiOwnerSelector(ChatClient chatClient, MeterRegistry meterRegistry) {
         this.chatClient = chatClient;
+        // Both engines report to this meter and tell themselves apart through the "engine" tag.
+        this.selectionTimer = Timer.builder("triage.owner.selection")
+                .description("Time taken by the selection engine to pick an owner")
+                .tag("engine", "spring-ai")
+                .register(meterRegistry);
     }
 
     @Override
     public Optional<OwnerAssignment> select(Issue issue) {
+        // Timer#record stops its sample in a finally block, so a selection that fails is timed too.
+        return selectionTimer.record(() -> selectOwner(issue));
+    }
+
+    private Optional<OwnerAssignment> selectOwner(Issue issue) {
         // Ask the LLM to pick the owner best suited to the issue, using the
         // issue-triage skill for the roster and rules, then validate the reply.
         var system = """
