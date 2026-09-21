@@ -27,7 +27,7 @@ make test-live   # add the worker tests that call the real selection engines
 
 The **worker always runs locally** in both modes. `make app-up` and `make dev`
 run local processes in the foreground and need `ANTHROPIC_API_KEY` in `.env`
-(git-ignored); the `-jev` variants need `TYPESAFE_AI_API_KEY` instead. In
+(git-ignored); the `-jev` variants need `TYPESAFE_API_KEY` instead. In
 `dev`, the local backend listens on `8081` and the containerized gateway
 proxies to it via `host.containers.internal`.
 
@@ -88,7 +88,7 @@ auto-discovers.
 
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
-and a `TYPESAFE_AI_API_KEY` in `.env`.
+and a `TYPESAFE_API_KEY` in `.env`.
 
 ## Modules
 

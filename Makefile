@@ -123,7 +123,7 @@ worker_profile_env = $(if $(WORKER_PROFILES),SPRING_PROFILES_ACTIVE=$(WORKER_PRO
 
 # The worker always runs locally (never containerized) so it can be rebuilt and
 # redeployed fast during the demo. The default (Spring AI) engine needs
-# ANTHROPIC_API_KEY; the `jev` engine needs TYPESAFE_AI_API_KEY (both from
+# ANTHROPIC_API_KEY; the `jev` engine needs TYPESAFE_API_KEY (both from
 # .env). Both targets run local processes in the foreground; the trap reaps
 # the whole process group on Ctrl-C or crash, and any process tearing down
 # takes the rest.

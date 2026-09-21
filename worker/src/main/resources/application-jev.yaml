@@ -22,8 +22,8 @@ spring:
 triage:
   jev:
     base-url: https://api.typesafe.ai/v1
-    model: jev-latest
-    api-key: ${TYPESAFE_AI_API_KEY:}
+    model: ${TYPESAFE_MODEL:jev-latest}
+    api-key: ${TYPESAFE_API_KEY:}
   # The roster the Jev question offers as its choice criteria. It mirrors the
   # `## Owners` table of the issue-triage skill, which the Spring AI engine's
   # model reads instead; TriageRosterConsistencyTest holds the two in step.

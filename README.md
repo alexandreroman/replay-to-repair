@@ -39,7 +39,7 @@ and it ships to production faster.
   put it in `.env` (see [Configuration](#configuration)):
   - **Anthropic** (`ANTHROPIC_API_KEY`) — the default engine calls Claude
     through Spring AI
-  - **TypeSafe** (`TYPESAFE_AI_API_KEY`) — the Jev engine (`make app-up-jev` /
+  - **TypeSafe** (`TYPESAFE_API_KEY`) — the Jev engine (`make app-up-jev` /
     `make dev-jev`) calls [Jev](https://typesafe.ai), TypeSafe's decision
     model, through TypeSafe's own API at `https://api.typesafe.ai`. This
     profile needs no Anthropic key
@@ -63,7 +63,7 @@ open http://localhost:8080
 
 > [!NOTE]
 > `make app-up-jev` (or `make dev-jev`) runs the worker with the Jev
-> owner-selection engine instead: it needs `TYPESAFE_AI_API_KEY` in `.env`,
+> owner-selection engine instead: it needs `TYPESAFE_API_KEY` in `.env`,
 > not the Anthropic key.
 
 The Temporal Web UI is available at <http://localhost:8080/temporal> — it is
@@ -224,16 +224,17 @@ are tagged `live` and excluded by default, so the suite needs no API key.
 
 ## Configuration
 
-| Variable              | Description                          | Default          |
-| --------------------- | ------------------------------------ | ---------------- |
-| `ANTHROPIC_API_KEY`   | Anthropic key for the default engine | (required)       |
-| `ANTHROPIC_MODEL`     | Claude model used for owner triage   | `claude-sonnet-5`|
-| `TYPESAFE_AI_API_KEY` | TypeSafe key for the Jev engine      | (jev only)       |
-| `TEMPORAL_ADDRESS`    | Temporal gRPC endpoint               | `localhost:7233` |
-| `TEMPORAL_NAMESPACE`  | Temporal namespace                   | `default`        |
+| Variable             | Description                          | Default           |
+| -------------------- | ------------------------------------ | ----------------- |
+| `ANTHROPIC_API_KEY`  | Anthropic key for the default engine | (required)        |
+| `ANTHROPIC_MODEL`    | Claude model used for owner triage   | `claude-sonnet-5` |
+| `TYPESAFE_API_KEY`   | TypeSafe key for the Jev engine      | (jev only)        |
+| `TYPESAFE_MODEL`     | Jev model used for owner triage      | `jev-latest`      |
+| `TEMPORAL_ADDRESS`   | Temporal gRPC endpoint               | `localhost:7233`  |
+| `TEMPORAL_NAMESPACE` | Temporal namespace                   | `default`         |
 
-The Jev endpoint and model id (`triage.jev.*`) are not environment variables:
-they live in
+The Jev endpoint (`triage.jev.base-url`) is not an environment variable: it
+lives in
 [`application-jev.yaml`](worker/src/main/resources/application-jev.yaml).
 
 Put local values, including secrets, in `.env` (git-ignored); `make` loads it

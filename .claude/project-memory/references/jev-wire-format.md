@@ -8,11 +8,12 @@ type: reference
 
 Jev, TypeSafe's decision model, is reached at
 `POST https://api.typesafe.ai/v1/systemone`, authenticated with a Bearer
-`TYPESAFE_AI_API_KEY`. The model id is `jev-latest`. The request body is
-`{model, state, questions}`: `state` is a free-form map of the facts to judge,
-and `questions` is a map of question id to question. A `choice` question
-carries `instructions` (the natural-language question) plus a `criteria` map
-of option name to option description — the options offered to the model.
+`TYPESAFE_API_KEY` (see [[engine-env-var-naming]]). The model id is
+`jev-latest`. The request body is `{model, state, questions}`: `state` is a
+free-form map of the facts to judge, and `questions` is a map of question id
+to question. A `choice` question carries `instructions` (the
+natural-language question) plus a `criteria` map of option name to option
+description — the options offered to the model.
 
 The response body is `{answers: {<question-id>: {choice, probabilities,
 confidence}}}` plus a root-level `model` field and a `usage` field with

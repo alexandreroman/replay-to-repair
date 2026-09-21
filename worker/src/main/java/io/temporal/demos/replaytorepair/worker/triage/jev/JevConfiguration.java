@@ -24,7 +24,7 @@ class JevConfiguration {
         // @Validated/@NotBlank, which would be silently inert.
         if (properties.apiKey() == null || properties.apiKey().isBlank()) {
             throw new IllegalStateException(
-                    "The Jev owner-selection engine needs a TypeSafe API key: set TYPESAFE_AI_API_KEY");
+                    "The Jev owner-selection engine needs a TypeSafe API key: set TYPESAFE_API_KEY");
         }
         return builder
                 .baseUrl(properties.baseUrl())

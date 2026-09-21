@@ -46,6 +46,7 @@
 - [Temporal user metadata is UI-only](references/temporal-user-metadata-ui-only.md) — summary/details label the Web UI, the memo stays the programmatic source; replay-safe
 - [Workflow input wire names must match the replay fixture](references/workflow-input-wire-names-replay.md) — renaming an Issue component fails replay until make capture-history runs
 - [Jev's decision-model wire format](references/jev-wire-format.md) — POST /v1/systemone on TypeSafe's API; no client-side retry, Temporal owns it
+- [Engine credentials and model ids are environment variables](references/engine-env-var-naming.md) — TYPESAFE_API_KEY follows the official SDK; TYPESAFE_MODEL mirrors ANTHROPIC_MODEL
 - [Temporal owns every retry](references/temporal-owns-every-retry.md) — the Activity retry policy is the only retry; no client-side retry
 - [Client timeouts fit the Activity deadline](references/client-timeouts-inside-activity-deadline.md) — both engines time out below the 30s start-to-close
 - [Worker auto-discovery](references/temporal-workers-auto-discovery-config.md) — workflow-packages scans @WorkflowImpl; activity beans need the flag

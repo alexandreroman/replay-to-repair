@@ -79,7 +79,7 @@ Implemented and committed:
   `./mvnw -B verify -Dexcluded.test.groups=`, which adds the worker's
   `live`-tagged engine tests to the run; it builds no container images. The
   worker's live-tagged tests read `ANTHROPIC_API_KEY` and
-  `TYPESAFE_AI_API_KEY` from repository secrets of the same names — the former
+  `TYPESAFE_API_KEY` from repository secrets of the same names — the former
   for the default Spring AI engine, the latter for the jev-profile tests calling
   Jev through TypeSafe's own API — and both secrets must be configured for the
   worker job to pass. A `paths-ignore` filter on the push/PR triggers skips
