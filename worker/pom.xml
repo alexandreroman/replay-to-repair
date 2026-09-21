@@ -98,10 +98,10 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- The `live` tag marks OwnerSelectorTest and JevOwnerSelectorTest, which call the
-                 paid Anthropic and TypeSafe APIs for real. They stay out of the default run, which
-                 is therefore offline and needs no API key. Clear the property to run them:
-                 ./mvnw test -Dexcluded.test.groups= -->
+            <!-- The `live` tag marks OwnerSelectorTest, JevOwnerSelectorTest and JevClientTest,
+                 which call the paid Anthropic and TypeSafe APIs for real. They stay out of the
+                 default run, which is therefore offline and needs no API key. Clear the property
+                 to run them: ./mvnw test -Dexcluded.test.groups= -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

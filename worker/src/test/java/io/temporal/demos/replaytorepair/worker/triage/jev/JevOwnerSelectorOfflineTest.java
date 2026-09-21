@@ -2,6 +2,9 @@ package io.temporal.demos.replaytorepair.worker.triage.jev;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -9,7 +12,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.RestClient;
@@ -17,15 +22,27 @@ import org.springframework.web.client.RestClientException;
 
 import io.temporal.demos.replaytorepair.worker.triage.Issue;
 import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
+import io.temporal.demos.replaytorepair.worker.triage.jev.client.JevClient;
 
 /**
- * Offline unit test for {@link JevOwnerSelector}: no network call and no API key, unlike the live
+ * Offline unit test for {@link JevOwnerSelector}: no network call and no real API key, unlike the live
  * {@link JevOwnerSelectorTest}. A {@link MockRestServiceServer} stands in for TypeSafe's systemone
  * endpoint, and each test feeds it a canned JSON body to exercise the branches {@link
  * OwnerSelector#select} distinguishes.
  */
 class JevOwnerSelectorOfflineTest {
-    private static final String SYSTEMONE_URL = "https://example.invalid/systemone";
+    private static final String BASE_URL = "https://example.invalid";
+    private static final String SYSTEMONE_URL = BASE_URL + "/systemone";
+
+    // A second copy of the instructions the selector sends, so a reworded question fails here.
+    private static final String EXPECTED_INSTRUCTIONS = "Which owner should handle this issue? Pick the owner "
+            + "whose specialties most directly cover it; break ties by preference.";
+
+    // Deliberately terse entries: the request test below pins the shape and the order of the body,
+    // not the wording of a roster entry.
+    private static final TriageRosterProperties TERSE_ROSTER = new TriageRosterProperties(List.of(
+            new TriageRosterProperties.Owner("alice", List.of("backend"), List.of("REST design")),
+            new TriageRosterProperties.Owner("carol", List.of("security"), List.of("audits"))));
 
     // The response TypeSafe's systemone endpoint returned when probed live, confidence lowered to
     // 0.87 so it is distinguishable from a round-number stub. Pins the real wire shape: a "type"
@@ -87,6 +104,41 @@ class JevOwnerSelectorOfflineTest {
     }
 
     @Test
+    void theQuestionOffersTheRosterInOrderFollowedByTheNoneOption() {
+        var expectedBody = """
+                {
+                  "model": "jev-latest",
+                  "state": {
+                    "issue_title": "%s",
+                    "issue_description": "%s"
+                  },
+                  "questions": {
+                    "owner": {
+                      "type": "choice",
+                      "instructions": "%s",
+                      "criteria": {
+                        "alice": "Specialties: backend. Prefers: REST design.",
+                        "carol": "Specialties: security. Prefers: audits.",
+                        "none": "No owner's specialties reasonably cover this issue."
+                      }
+                    }
+                  }
+                }
+                """.formatted(issue.issueTitle(), issue.issueDescription(), EXPECTED_INSTRUCTIONS);
+        var builder = RestClient.builder();
+        MockRestServiceServer.bindTo(builder).build()
+                .expect(requestTo(SYSTEMONE_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json(expectedBody, JsonCompareMode.STRICT))
+                // A JSON comparison ignores the order of object keys, so the order in which the
+                // options reach the model is pinned on the raw body instead.
+                .andExpect(content().string(stringContainsInOrder("\"alice\"", "\"carol\"", "\"none\"")))
+                .andRespond(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
+        var client = new JevClient(builder, BASE_URL, "dummy-key", "jev-latest");
+        assertThat(new JevOwnerSelector(client, TERSE_ROSTER).select(issue)).isPresent();
+    }
+
+    @Test
     void unknownRootFieldsAreTolerated() {
         var selector = selectorRespondingWith(withSuccess(UNKNOWN_ROOT_FIELDS_BODY, MediaType.APPLICATION_JSON));
         var assignment = selector.select(issue).orElseThrow();
@@ -145,10 +197,9 @@ class JevOwnerSelectorOfflineTest {
     }
 
     private JevOwnerSelector selectorRespondingWith(ResponseCreator responseCreator) {
-        var builder = RestClient.builder().baseUrl("https://example.invalid");
+        var builder = RestClient.builder();
         var server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo(SYSTEMONE_URL)).andRespond(responseCreator);
-        var properties = new JevProperties("https://example.invalid", "jev-latest", "test-key");
-        return new JevOwnerSelector(builder.build(), properties, roster);
+        return new JevOwnerSelector(new JevClient(builder, BASE_URL, "dummy-key", "jev-latest"), roster);
     }
 }
