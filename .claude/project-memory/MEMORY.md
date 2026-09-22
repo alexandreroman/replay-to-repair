@@ -29,6 +29,7 @@
 - [Project status](references/project-status.md) — implementation progress and the next step (single place tracking done vs. remaining)
 - [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
 - [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String
+- [Extended thinking breaks Spring AI structured output](references/anthropic-thinking-breaks-structured-output.md) — a thinking block lands ahead of the answer; the LLM engine runs with thinking disabled
 - [Logging conventions](references/logging-conventions.md) — SLF4J 2.x fluent API with addKeyValue context; .log() message is a dotted domain code, not a sentence; Workflow.getLogger in workflow code (replay-safe)
 - [ECS log format for all processes, always](references/ecs-logging-all-processes.md) — backend + worker emit ECS structured console logs unconditionally, including local/dev mode
 - [Roster lives twice, per engine](references/skills-tool-owner-roster.md) — SKILL.md (LLM engine) vs. application-jev.yaml roster; a test keeps them synced

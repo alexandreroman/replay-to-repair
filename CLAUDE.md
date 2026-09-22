@@ -94,6 +94,18 @@ package itself holds what both engines share — the `OwnerSelector` contract,
 `OwnerAssignment`, `Issue` — plus the Workflow and Activity implementations
 the Temporal worker auto-discovers.
 
+The LLM engine runs with Anthropic's extended thinking off (`chatOptions` in
+`ChatClientConfiguration`), which is a **workaround for an upstream Spring AI
+defect**, not a tuning knob: `AnthropicChatModel#buildGenerations` puts the
+generation it builds for a `thinking` content block ahead of the aggregate
+generation carrying the answer, and `ChatResponse#getResult()` — what
+`entity(...)` reads — returns the first one, so a structured-output call parses
+the thinking text instead of the JSON and fails intermittently.
+`ChatClientSettingsTest` pins the setting; the property
+`spring.ai.anthropic.chat.thinking` cannot carry it, because Boot's binder
+cannot construct the Anthropic SDK type it is declared as. The setting goes
+away once Spring AI reads the aggregate generation.
+
 The roster therefore exists twice, and `TriageRosterConsistencyTest` holds
 the two copies in step. Run the Jev engine with `SPRING_PROFILES_ACTIVE=jev`
 and a `TYPESAFE_API_KEY` in `.env`.
@@ -102,15 +114,15 @@ Each engine registers its own Micrometer `Timer` in its constructor, against
 the shared meter name `triage.owner.selection`; the `engine` tag (`llm` /
 `jev`) is what makes the two comparable across runs, and a `model` tag carries
 the model id each engine calls, read from `ChatModel#getDefaultOptions()` and
-`TypeSafeClient#defaultModel()` so it cannot drift from what is sent. The meter is read on the
-worker's management port: at
+`TypeSafeClient#defaultModel()` so it cannot drift from what is sent. The
+meter is read on the worker's management port: at
 `http://localhost:8082/actuator/metrics/triage.owner.selection` for a quick
 COUNT/TOTAL_TIME/MAX reading, and at
 `http://localhost:8082/actuator/prometheus` for a scrape, which serves the
 Prometheus text format and OpenMetrics alike
 (`Accept: application/openmetrics-text`) and names the timer
-`triage_owner_selection_seconds_*` with `engine` and `model` as labels. The registry in
-use is `io.micrometer:micrometer-registry-prometheus`, and
+`triage_owner_selection_seconds_*` with `engine` and `model` as labels. The
+registry in use is `io.micrometer:micrometer-registry-prometheus`, and
 `management.metrics.distribution` publishes the timer as a
 percentiles-histogram bounded to `100ms`–`30s`: p50/p95 come from
 `histogram_quantile` over the `_bucket` series, which aggregates across several

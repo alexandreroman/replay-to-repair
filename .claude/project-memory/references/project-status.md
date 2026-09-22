@@ -30,7 +30,10 @@ Implemented and committed:
   interface, selected by Spring profile (see [[skills-tool-owner-roster]] and
   [[demo-design-constraints]]). `LlmOwnerSelector` (`@Profile("!jev")`, the
   default) calls Claude through Spring AI, with the roster loaded model-side
-  from `SKILL.md` via `SkillsTool`; its output contract covers the chosen owner
+  from `SKILL.md` via `SkillsTool` and extended thinking disabled so the
+  answer is the response's only generation (see
+  [[anthropic-thinking-breaks-structured-output]]); its output contract
+  covers the chosen owner
   (or the `none` token when no owner fits) plus a one-sentence reason, parsed
   defensively with Jackson (unknown fields ignored, explicit property names,
   common key variants mapped via aliases). `JevOwnerSelector`
@@ -64,7 +67,8 @@ Implemented and committed:
   successful selection, and that a failing selection is recorded too;
   `OwnerSelectorProfileTest` pins the `engine=llm` series the same way, with
   the model id asserted as present and non-blank rather than as a literal,
-  because a developer's `.env` supplies `ANTHROPIC_MODEL` in that context. The worker's
+  because a developer's `.env` supplies `ANTHROPIC_MODEL` in that context.
+  The worker's
   application HTTP stack is unused and takes an ephemeral port
   (`server.port: 0`), while Actuator listens on its own
   `management.server.port`, which the Makefile owns: `WORKER_MANAGEMENT_PORT ?=
@@ -115,12 +119,12 @@ Implemented and committed:
   `frontend/**`, `gateway/**`, `LICENSE`, `.gitignore`); `workflow_dispatch`
   is unfiltered so manual runs always run.
 
-The worker suite is 35/35 green with the intentional bug committed. `make
-test` runs 27 of them offline in about eight seconds: `OwnerSelectorTest` and
+The worker suite is 37/37 green with the intentional bug committed. `make
+test` runs 29 of them offline in about eight seconds: `OwnerSelectorTest` and
 `JevOwnerSelectorTest` carry the JUnit `live` tag and `worker/pom.xml`
 excludes that tag through the `excluded.test.groups` property, so the default
 run makes no network call and needs no API key. `make test-live` and CI clear
-the property and run all 35.
+the property and run all 37.
 `OwnerSelectorTest` (a `@SpringBootTest` exercising the real
 `LlmOwnerSelector` bean with the injected `ChatClient`) and
 `JevOwnerSelectorTest` (a `@SpringBootTest` under the `jev` profile, calling Jev
@@ -137,7 +141,12 @@ also pins the request the engine sends — the `state` keys, the criteria built
 from the roster, and the order the options reach the model.
 `JevClientSettingsTest` boots the `jev` profile with a dummy key and pins the
 two settings the Activity's retry and deadline guarantees rest on:
-`retryPolicy().maxRetries()` at 0 and `timeout()` at 20s.
+`retryPolicy().maxRetries()` at 0 and `timeout()` at 20s, and
+`ChatClientSettingsTest` does the same for the LLM engine's one chat option,
+extended thinking off (see
+[[anthropic-thinking-breaks-structured-output]]). `LlmOwnerSelectorOfflineTest`
+drives the selector through a mocked `ChatModel` for its happy path, the only
+offline coverage of that engine end to end.
 `OwnerSelectorProfileTest` pins `LlmOwnerSelector` as the default
 engine when no profile is set. `TriageActivitiesImplTest` runs under the `test`
 profile with `OwnerSelector` mocked to return a different owner (carol),
