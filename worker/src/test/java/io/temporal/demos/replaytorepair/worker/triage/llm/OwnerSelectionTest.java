@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage.springai;
+package io.temporal.demos.replaytorepair.worker.triage.llm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import io.temporal.demos.replaytorepair.worker.triage.springai.SpringAiOwnerSelector.OwnerSelection;
+import io.temporal.demos.replaytorepair.worker.triage.llm.LlmOwnerSelector.OwnerSelection;
 
 /**
  * Plain-Jackson test for {@link OwnerSelection} deserialization: no Spring context and no LLM call,

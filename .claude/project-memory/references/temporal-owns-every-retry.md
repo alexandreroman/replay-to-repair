@@ -13,7 +13,7 @@ as non-retryable. Both owner-selection engines call their model with
 client-side retry disabled, so every attempt a triage makes is an Activity
 attempt recorded in the event history.
 
-The Spring AI engine reaches Anthropic through the official `anthropic-java`
+The LLM engine reaches Anthropic through the official `anthropic-java`
 SDK that Spring AI 2.x wraps, whose `ClientOptions.maxRetries` defaults to
 `2` — three HTTP attempts per chat call unless configured.
 `spring.ai.anthropic.max-retries: 0` in `application.yaml` turns that off. It
@@ -22,8 +22,16 @@ is a connection-level property (a sibling of `api-key`, not an option under
 The `spring.ai.retry.*` properties belong to a `RetryTemplate` that Spring AI
 2.x does not ship.
 
-The Jev engine reaches the same outcome by pinning the JDK HTTP client — see
-[[jev-wire-format]].
+The Jev engine reaches Jev through the spring-ai-community TypeSafe SDK,
+whose `RetryPolicy` allows 2 retries out of the box — three HTTP attempts per
+decision call unless configured. `spring.ai.typesafe.retry.max-retries: 0` in
+`application-jev.yaml` turns that off. A test that builds a `TypeSafeClient`
+by hand passes `RetryPolicy.noRetry()` for the same reason — see
+[[jev-wire-format]]. That SDK policy also carries a `retry.total-timeout`
+budget for a whole call including waits, defaulting to 30s — the Activity's
+own start-to-close timeout, so raising `max-retries` means setting that budget
+below the Activity deadline as well (see
+[[client-timeouts-inside-activity-deadline]]).
 
 **Why:** a retry layer underneath Temporal's hides attempts from the event
 history, which is what the demo replays: a triage that took two HTTP attempts

@@ -1,6 +1,6 @@
 ---
 name: "Owner roster lives twice, once per owner-selection engine"
-description: "SKILL.md for the Spring AI engine, triage.roster in application-jev.yaml for the Jev engine; TriageRosterConsistencyTest holds them in step"
+description: "SKILL.md for the LLM engine, triage.roster in application-jev.yaml for the Jev engine; TriageRosterConsistencyTest holds them in step"
 type: project
 ---
 
@@ -9,7 +9,7 @@ type: project
 The issue-triage owner roster and selection methodology exist in two forms,
 one per `OwnerSelector` implementation.
 
-On the Spring AI path (`SpringAiOwnerSelector`, `@Profile("!jev")`), the
+On the LLM path (`LlmOwnerSelector`, `@Profile("!jev")`), the
 roster is known **only model-side**: it lives in a single agentskills.io skill
 file at `worker/src/main/resources/skills/issue-triage/SKILL.md` (YAML
 frontmatter with `name`/`description`, a "How to select" section, and an
@@ -43,7 +43,7 @@ tool-calling model reads a skill file on demand, a decision model needs its
 options handed to it as typed criteria — so one editable source per engine is
 unavoidable; the consistency test is what keeps them from drifting apart.
 
-**How to apply:** edit the roster and rules in `SKILL.md` for the Spring AI
+**How to apply:** edit the roster and rules in `SKILL.md` for the LLM
 engine. Edit `triage.roster` in `application-jev.yaml` for the Jev engine, and
 update both together — `TriageRosterConsistencyTest` fails otherwise. Type the
 `SkillsTool` bean as `org.springframework.ai.tool.ToolCallback` —

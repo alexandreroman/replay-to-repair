@@ -29,9 +29,10 @@
 - [Project status](references/project-status.md) — implementation progress and the next step (single place tracking done vs. remaining)
 - [Docker and Podman compatibility](references/docker-podman-compatibility.md) — runs on Docker (preferred) and Podman with no user intervention (host alias + COMPOSE auto-detect)
 - [Spring AI structured output over raw String](references/spring-ai-structured-output.md) — use call().entity(record) to constrain the LLM to JSON rather than parsing a String
+- [Extended thinking breaks Spring AI structured output](references/anthropic-thinking-breaks-structured-output.md) — a thinking block lands ahead of the answer; the LLM engine runs with thinking disabled
 - [Logging conventions](references/logging-conventions.md) — SLF4J 2.x fluent API with addKeyValue context; .log() message is a dotted domain code, not a sentence; Workflow.getLogger in workflow code (replay-safe)
 - [ECS log format for all processes, always](references/ecs-logging-all-processes.md) — backend + worker emit ECS structured console logs unconditionally, including local/dev mode
-- [Roster lives twice, per engine](references/skills-tool-owner-roster.md) — SKILL.md (Spring AI) vs. application-jev.yaml roster; a test keeps them synced
+- [Roster lives twice, per engine](references/skills-tool-owner-roster.md) — SKILL.md (LLM engine) vs. application-jev.yaml roster; a test keeps them synced
 - [Roster specialties are mutually disjoint](references/roster-disjoint-specialties.md) — each problem area maps to one owner; alice owns backend/API/relational-DB, erin only analytics/ML
 - [IssueGenerator dataset is balanced across owners](references/issue-generator-owner-balance.md) — ~6 issues per owner incl. erin analytics/ML; next() stays a uniform random pick
 - [README must not mention Casper](references/readme-no-casper.md) — keep Casper out of the public README; Casper port-remap docs live in CLAUDE.md only
@@ -45,7 +46,7 @@
 - [Verify the dashboard in a painting browser panel](references/dashboard-browser-verification.md) — card animations only advance in the visible panel; headless reads of opacity/innerText mislead
 - [Temporal user metadata is UI-only](references/temporal-user-metadata-ui-only.md) — summary/details label the Web UI, the memo stays the programmatic source; replay-safe
 - [Workflow input wire names must match the replay fixture](references/workflow-input-wire-names-replay.md) — renaming an Issue component fails replay until make capture-history runs
-- [Jev's decision-model wire format](references/jev-wire-format.md) — choice/score/noul batch in one call; no client-side retry
+- [Jev's decision-model wire format](references/jev-wire-format.md) — choice/score/noul batch in one call; the spring-ai-typesafe SDK owns the format
 - [Engine credentials and model ids are environment variables](references/engine-env-var-naming.md) — provider-named vars, model default in YAML
 - [Temporal owns every retry](references/temporal-owns-every-retry.md) — the Activity retry policy is the only retry; no client-side retry
 - [Client timeouts fit the Activity deadline](references/client-timeouts-inside-activity-deadline.md) — both engines time out below the 30s start-to-close

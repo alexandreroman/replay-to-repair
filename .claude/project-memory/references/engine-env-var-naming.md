@@ -9,7 +9,7 @@ type: project
 Each owner-selection engine reads its credential and its model id from the
 environment, the model with a default in the profile's Spring config:
 
-- Spring AI — `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (default
+- LLM — `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (default
   `claude-sonnet-5`), in `application.yaml`.
 - Jev — `TYPESAFE_API_KEY` and `TYPESAFE_MODEL` (default `jev-latest`), in
   `application-jev.yaml`.

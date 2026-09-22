@@ -16,7 +16,7 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * Guards the two copies of the owner roster against drift: the Markdown table in the issue-triage
- * skill, which only the Spring AI engine's model reads, and the configured roster the Jev engine
+ * skill, which only the LLM engine's model reads, and the configured roster the Jev engine
  * turns into its question criteria. Specialties and preferences are the actual routing signal for
  * both engines, so the whole roster is compared, not just owner names.
  */

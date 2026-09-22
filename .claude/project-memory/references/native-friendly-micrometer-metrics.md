@@ -12,15 +12,25 @@ Annotation-driven metrics are out of scope — no `@Timed`, no `@Observed`, no
 Spring AOP, no aspects, proxies, reflection, or extra AOT hints — so the code
 compiles to a GraalVM native image without additional configuration.
 
-Owner selection is measured per engine: `SpringAiOwnerSelector` and
+Owner selection is measured per engine: `LlmOwnerSelector` and
 `JevOwnerSelector` each build their own `Timer` in their constructor, against
-the shared meter name `triage.owner.selection` and with a single `engine` tag
-(`spring-ai` / `jev`) as the only difference. Each engine owns that small
+the shared meter name `triage.owner.selection`, and carry two tags: `engine`
+(`llm` / `jev`), which is what the two series are compared across, and
+`model`, the id of the model that engine calls. Each engine owns that small
 duplication on purpose: there is no wrapper class and no shared constant
 holder, so the meter definition stays next to the code it measures and the
 engines keep no common dependency beyond the `OwnerSelector` contract. There is
-deliberately no `outcome` or `exception` tag either: exactly one series per
-engine is what the engine comparison needs.
+deliberately no `outcome` or `exception` tag: one series per engine and model
+is what the engine comparison needs.
+
+The `model` value is read from the object that holds the effective setting —
+`ChatModel#getDefaultOptions().getModel()` on the LLM path, after the
+auto-configuration has merged the chat and connection properties, and
+`TypeSafeClient#defaultModel()` on the Jev path — never from a duplicated
+literal or a placeholder default, so the tag cannot disagree with the model
+the request carries. A tag value is non-null by contract (`ImmutableTag`
+calls `Objects.requireNonNull`), so an id that fails to resolve fails worker
+startup instead of mislabelling a series.
 
 In both engines, `select(Issue)` is a one-line
 `selectionTimer.record(() -> selectOwner(issue))` over a private
@@ -77,8 +87,9 @@ alone and cannot be merged with another's.
 
 **How to apply:** to instrument new code, inject `MeterRegistry` through the
 constructor and call the meter directly. A new selection engine registers its
-own `Timer` on the `triage.owner.selection` name with its own `engine` tag, and
-times its work through the same `select`/`selectOwner` split — it inherits the
+own `Timer` on the `triage.owner.selection` name with its own `engine` tag and
+the `model` tag read from its client, and times its work through the same
+`select`/`selectOwner` split — it inherits the
 histogram configuration, which is keyed by meter name. A new meter that needs
 quantiles gets its own `management.metrics.distribution` entries, with bounds
 framing its expected range. Tests that build a selector by hand pass a

@@ -14,27 +14,29 @@ import java.util.List;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import org.junit.jupiter.api.Test;
+import org.springaicommunity.typesafe.RetryPolicy;
+import org.springaicommunity.typesafe.TypeSafeClient;
+import org.springaicommunity.typesafe.exception.TypeSafeApiResponseValidationException;
+import org.springaicommunity.typesafe.exception.TypeSafeInternalServerException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.ResponseCreator;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 import io.temporal.demos.replaytorepair.worker.triage.Issue;
 import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
-import io.temporal.demos.replaytorepair.worker.triage.jev.client.JevClient;
 
 /**
  * Offline unit test for {@link JevOwnerSelector}: no network call and no real API key, unlike the live
  * {@link JevOwnerSelectorTest}. A {@link MockRestServiceServer} stands in for TypeSafe's systemone
- * endpoint, and each test feeds it a canned JSON body to exercise the branches {@link
- * OwnerSelector#select} distinguishes.
+ * endpoint behind a hand-built {@link TypeSafeClient}, and each test feeds it a canned JSON body to
+ * exercise the branches {@link OwnerSelector#select} distinguishes.
  */
 class JevOwnerSelectorOfflineTest {
     private static final String BASE_URL = "https://example.invalid";
-    private static final String SYSTEMONE_URL = BASE_URL + "/systemone";
+    private static final String SYSTEMONE_URL = BASE_URL + "/v1/systemone";
 
     // A second copy of the instructions the selector sends, so a reworded question fails here.
     private static final String EXPECTED_INSTRUCTIONS = "Which owner should handle this issue? Pick the owner "
@@ -108,7 +110,7 @@ class JevOwnerSelectorOfflineTest {
     }
 
     @Test
-    void timesTheSelectionUnderTheJevEngineTag() {
+    void timesTheSelectionUnderTheEngineAndModelTags() {
         var selector = selectorRespondingWith(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
 
         selector.select(issue).orElseThrow();
@@ -147,8 +149,8 @@ class JevOwnerSelectorOfflineTest {
                 // options reach the model is pinned on the raw body instead.
                 .andExpect(content().string(stringContainsInOrder("\"alice\"", "\"carol\"", "\"none\"")))
                 .andRespond(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
-        var client = new JevClient(builder, BASE_URL, "dummy-key", "jev-latest");
-        assertThat(new JevOwnerSelector(client, TERSE_ROSTER, meterRegistry).select(issue)).isPresent();
+        var selector = new JevOwnerSelector(clientBoundTo(builder), TERSE_ROSTER, meterRegistry);
+        assertThat(selector.select(issue)).isPresent();
     }
 
     @Test
@@ -195,31 +197,50 @@ class JevOwnerSelectorOfflineTest {
     }
 
     @Test
-    void missingAnswersKeyThrows() {
+    void answerlessResponseThrows() {
+        // The SDK rejects a response carrying no answers before the selector reads one.
         var body = """
                 {"model": "jev-1.13.0"}
                 """;
         var selector = selectorRespondingWith(withSuccess(body, MediaType.APPLICATION_JSON));
-        assertThatThrownBy(() -> selector.select(issue)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> selector.select(issue))
+                .isInstanceOf(TypeSafeApiResponseValidationException.class);
     }
 
     @Test
     void httpServerErrorThrows() {
         var selector = selectorRespondingWith(withServerError());
-        assertThatThrownBy(() -> selector.select(issue)).isInstanceOf(RestClientException.class);
+        assertThatThrownBy(() -> selector.select(issue)).isInstanceOf(TypeSafeInternalServerException.class);
         // The attempt is timed even though it fails, so a broken engine shows up in the series.
         assertThat(jevTimerCount()).isEqualTo(1);
     }
 
+    // Looking the timer up by both tags fails the test unless the series carries them: the engine
+    // it was recorded by, and the model id the client below is built with.
     private long jevTimerCount() {
-        return meterRegistry.get("triage.owner.selection").tag("engine", "jev").timer().count();
+        return meterRegistry.get("triage.owner.selection")
+                .tag("engine", "jev")
+                .tag("model", "jev-latest")
+                .timer()
+                .count();
     }
 
     private JevOwnerSelector selectorRespondingWith(ResponseCreator responseCreator) {
         var builder = RestClient.builder();
         var server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo(SYSTEMONE_URL)).andRespond(responseCreator);
-        return new JevOwnerSelector(
-                new JevClient(builder, BASE_URL, "dummy-key", "jev-latest"), roster, meterRegistry);
+        return new JevOwnerSelector(clientBoundTo(builder), roster, meterRegistry);
+    }
+
+    // RetryPolicy.noRetry() keeps a failing response to the single request the mock server
+    // expects; the default policy would retry a 5xx and overshoot that expectation.
+    private static TypeSafeClient clientBoundTo(RestClient.Builder builder) {
+        return TypeSafeClient.builder()
+                .apiKey("dummy-key")
+                .baseUrl(BASE_URL)
+                .defaultModel("jev-latest")
+                .retryPolicy(RetryPolicy.noRetry())
+                .restClientBuilder(builder)
+                .build();
     }
 }

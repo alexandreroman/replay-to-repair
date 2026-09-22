@@ -9,20 +9,23 @@ import java.util.Optional;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
+import org.springaicommunity.typesafe.TypeSafeClient;
+import org.springaicommunity.typesafe.question.Choice;
+import org.springaicommunity.typesafe.response.ChoiceAnswer;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import io.temporal.demos.replaytorepair.worker.triage.Issue;
 import io.temporal.demos.replaytorepair.worker.triage.OwnerAssignment;
 import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
-import io.temporal.demos.replaytorepair.worker.triage.jev.client.JevAnswer;
-import io.temporal.demos.replaytorepair.worker.triage.jev.client.JevClient;
-import io.temporal.demos.replaytorepair.worker.triage.jev.client.JevQuestion;
 
 /**
  * Owner selection backed by Jev, a decision model that answers a typed question rather than
- * generating text. The roster is sent as the question's criteria, because the model calls no tools
- * and so cannot read the issue-triage skill the way the Spring AI engine's model does.
+ * generating text. The roster is offered as the options of a {@link Choice} question, because the
+ * model calls no tools and so cannot read the issue-triage skill the way the LLM engine's model
+ * does. The call goes out over the {@link TypeSafeClient} the spring-ai-community TypeSafe starter
+ * auto-configures from {@code spring.ai.typesafe.*}.
  */
 @Component
 @Profile("jev")
@@ -32,20 +35,23 @@ class JevOwnerSelector implements OwnerSelector {
     private static final String INSTRUCTIONS = "Which owner should handle this issue? Pick the owner whose "
             + "specialties most directly cover it; break ties by preference.";
 
-    private final JevClient jevClient;
+    private final TypeSafeClient typeSafeClient;
     // Built once at startup: the roster does not change while the worker runs.
-    private final JevQuestion.Choice question;
+    private final Choice question;
     private final Map<String, String> specialtiesByOwner;
     private final Timer selectionTimer;
 
-    JevOwnerSelector(JevClient jevClient, TriageRosterProperties roster, MeterRegistry meterRegistry) {
-        this.jevClient = jevClient;
-        this.question = new JevQuestion.Choice(INSTRUCTIONS, buildCriteria(roster));
+    JevOwnerSelector(TypeSafeClient typeSafeClient, TriageRosterProperties roster, MeterRegistry meterRegistry) {
+        this.typeSafeClient = typeSafeClient;
+        this.question = buildQuestion(roster);
         this.specialtiesByOwner = buildSpecialties(roster);
-        // The meter is shared with the other engine, the "engine" tag keeps the two series apart.
+        // The meter is shared with the other engine: the "engine" tag keeps the two series apart
+        // and "model" records the model id each one calls. The client's default model is the id it
+        // puts on the wire, rather than a second reading of the property the starter itself binds.
         this.selectionTimer = Timer.builder("triage.owner.selection")
                 .description("Time taken by the selection engine to pick an owner")
                 .tag("engine", "jev")
+                .tag("model", typeSafeClient.defaultModel())
                 .register(meterRegistry);
     }
 
@@ -59,14 +65,15 @@ class JevOwnerSelector implements OwnerSelector {
         var state = Map.of(
                 "issue_title", issue.issueTitle(),
                 "issue_description", issue.issueDescription());
-        return resolveOwner(jevClient.ask(state, QUESTION_ID, question));
+        var response = typeSafeClient.systemOne(state, Map.of(QUESTION_ID, question));
+        return resolveOwner(response.choice(QUESTION_ID));
     }
 
     // The "none" token is the deliberate no-suitable-owner verdict and yields an empty Optional,
     // which the Activity turns into Temporal's non-retryable failure. Everything else that does not
     // match the roster is a malformed answer and throws, so Temporal retries the activity.
-    private Optional<OwnerAssignment> resolveOwner(JevAnswer.Choice answer) {
-        var candidate = answer.choice() == null ? "" : answer.choice().trim();
+    private Optional<OwnerAssignment> resolveOwner(ChoiceAnswer answer) {
+        var candidate = answer.value() == null ? "" : answer.value().trim();
         if (candidate.isEmpty()) {
             throw new IllegalStateException("Jev returned a blank owner");
         }
@@ -81,26 +88,24 @@ class JevOwnerSelector implements OwnerSelector {
     }
 
     // Jev answers with a typed choice and a calibrated confidence, never prose, so the reason is
-    // composed from the roster entry that matched and the confidence reported for the pick. Both
-    // branches format with Locale.ROOT, even the one with no numeric specifier today, so a future
-    // %f or %d added here does not silently reintroduce a host-locale-dependent reason string.
-    private static String buildReason(String specialties, Double confidence) {
-        if (confidence == null) {
-            return String.format(Locale.ROOT, "Specialties cover %s", specialties);
-        }
+    // composed from the roster entry that matched and the confidence reported for the pick.
+    // Every choice answer carries a confidence, so the primitive double holds a reported value:
+    // a "confidence 0.00" in the reason is a genuinely unconfident pick, not an absent field.
+    // Locale.ROOT keeps the decimal separator of the confidence out of the host locale's hands.
+    private static String buildReason(String specialties, double confidence) {
         return String.format(Locale.ROOT, "Specialties cover %s (confidence %.2f)", specialties, confidence);
     }
 
-    // The map is handed straight to the question, which copies it into an order-preserving map of
-    // its own: the roster order is the order the options are offered to the model.
-    private static Map<String, String> buildCriteria(TriageRosterProperties roster) {
-        var criteria = new LinkedHashMap<String, String>();
+    // The builder collects the options into an order-preserving map, so the roster order is the
+    // order they are offered to the model, with the no-suitable-owner token last.
+    private static Choice buildQuestion(TriageRosterProperties roster) {
+        var builder = Choice.builder().instructions(INSTRUCTIONS);
         for (var owner : roster.owners()) {
-            criteria.put(owner.name(), "Specialties: %s. Prefers: %s.".formatted(
+            builder.option(owner.name(), "Specialties: %s. Prefers: %s.".formatted(
                     String.join(", ", owner.specialties()), String.join(", ", owner.preferences())));
         }
-        criteria.put(NO_SUITABLE_OWNER, "No owner's specialties reasonably cover this issue.");
-        return criteria;
+        builder.option(NO_SUITABLE_OWNER, "No owner's specialties reasonably cover this issue.");
+        return builder.build();
     }
 
     private static Map<String, String> buildSpecialties(TriageRosterProperties roster) {

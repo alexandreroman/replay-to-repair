@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage.springai;
+package io.temporal.demos.replaytorepair.worker.triage.llm;
 
 import java.util.Optional;
 
@@ -10,6 +10,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -20,19 +21,24 @@ import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
 /** Owner selection backed by an LLM through Spring AI, using the issue-triage skill for the roster. */
 @Component
 @Profile("!jev")
-class SpringAiOwnerSelector implements OwnerSelector {
+class LlmOwnerSelector implements OwnerSelector {
     private static final String NO_SUITABLE_OWNER = "none";
 
     private final ChatClient chatClient;
     private final Timer selectionTimer;
 
-    // The ChatClient is injected directly (not the builder) so tests can pass a mock.
-    SpringAiOwnerSelector(ChatClient chatClient, MeterRegistry meterRegistry) {
+    // The ChatClient is injected directly (not the builder) so tests can pass a mock. The
+    // ChatModel alongside it is the model that same client calls through.
+    LlmOwnerSelector(ChatClient chatClient, ChatModel chatModel, MeterRegistry meterRegistry) {
         this.chatClient = chatClient;
-        // Both engines report to this meter and tell themselves apart through the "engine" tag.
+        // Both engines report to this meter: "engine" tells the two apart and "model" records the
+        // model id each one calls. The model id comes from the ChatModel's default options, which
+        // hold it as the starter resolved it for the calls actually sent, rather than from a
+        // second reading of the property the starter itself binds.
         this.selectionTimer = Timer.builder("triage.owner.selection")
                 .description("Time taken by the selection engine to pick an owner")
-                .tag("engine", "spring-ai")
+                .tag("engine", "llm")
+                .tag("model", chatModel.getDefaultOptions().getModel())
                 .register(meterRegistry);
     }
 

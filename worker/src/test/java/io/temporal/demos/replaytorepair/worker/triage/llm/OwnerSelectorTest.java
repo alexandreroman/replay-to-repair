@@ -1,4 +1,4 @@
-package io.temporal.demos.replaytorepair.worker.triage.springai;
+package io.temporal.demos.replaytorepair.worker.triage.llm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,7 +17,7 @@ import io.temporal.demos.replaytorepair.worker.triage.OwnerAssignment;
 import io.temporal.demos.replaytorepair.worker.triage.OwnerSelector;
 
 /**
- * Spring Boot test for {@link SpringAiOwnerSelector} using the real Spring-wired
+ * Spring Boot test for {@link LlmOwnerSelector} using the real Spring-wired
  * {@link org.springframework.ai.chat.client.ChatClient}. It verifies that backend, API and
  * relational-database issues — alice's domain in the triage roster — are assigned to alice, and
  * that a security issue is routed to carol instead.

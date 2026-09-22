@@ -1,8 +1,9 @@
-package io.temporal.demos.replaytorepair.worker.triage.springai;
+package io.temporal.demos.replaytorepair.worker.triage.llm;
 
 import java.util.List;
 
 import org.springaicommunity.agent.tools.SkillsTool;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +30,20 @@ class ChatClientConfiguration {
         return SkillsTool.builder().addSkillsResources(skillLocations).build();
     }
 
+    /**
+     * The delta this configuration applies to every owner-selection call: extended thinking off.
+     * Spring AI merges it onto the model's own defaults per call, so everything bound from
+     * {@code spring.ai.anthropic.*} still reaches the request. Thinking is off because the call
+     * wants one JSON object and no extended reasoning, and a {@code thinking} block in the reply
+     * trips an upstream generation-ordering defect that surfaces as an intermittent parse failure.
+     */
     @Bean
-    ChatClient chatClient(ChatClient.Builder builder, ToolCallback skills) {
-        return builder.defaultTools(skills).build();
+    AnthropicChatOptions chatOptions() {
+        return AnthropicChatOptions.builder().thinkingDisabled().build();
+    }
+
+    @Bean
+    ChatClient chatClient(ChatClient.Builder builder, ToolCallback skills, AnthropicChatOptions chatOptions) {
+        return builder.defaultTools(skills).defaultOptions(chatOptions.mutate()).build();
     }
 }
