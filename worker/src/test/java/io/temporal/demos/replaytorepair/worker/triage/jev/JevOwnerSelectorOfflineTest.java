@@ -146,7 +146,8 @@ class JevOwnerSelectorOfflineTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(content().json(expectedBody, JsonCompareMode.STRICT))
                 // A JSON comparison ignores the order of object keys, so the order in which the
-                // options reach the model is pinned on the raw body instead.
+                // state fields and the options reach the model is pinned on the raw body instead.
+                .andExpect(content().string(stringContainsInOrder("\"issue_title\"", "\"issue_description\"")))
                 .andExpect(content().string(stringContainsInOrder("\"alice\"", "\"carol\"", "\"none\"")))
                 .andRespond(withSuccess(HAPPY_PATH_BODY, MediaType.APPLICATION_JSON));
         var selector = new JevOwnerSelector(clientBoundTo(builder), TERSE_ROSTER, meterRegistry);
