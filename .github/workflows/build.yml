@@ -36,7 +36,9 @@ permissions:
 jobs:
   build:
     name: Build ${{ matrix.module }}
-    runs-on: ubuntu-latest
+    # The runner image is pinned so it only changes through a commit, never
+    # through the moving ubuntu-latest label.
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
