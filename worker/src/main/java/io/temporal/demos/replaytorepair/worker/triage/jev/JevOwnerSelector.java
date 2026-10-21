@@ -9,6 +9,7 @@ import java.util.Optional;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
+import org.springaicommunity.typesafe.JsonContent;
 import org.springaicommunity.typesafe.TypeSafeClient;
 import org.springaicommunity.typesafe.question.Choice;
 import org.springaicommunity.typesafe.response.ChoiceAnswer;
@@ -62,7 +63,10 @@ class JevOwnerSelector implements OwnerSelector {
     }
 
     private Optional<OwnerAssignment> selectOwner(Issue issue) {
-        var state = Map.of(
+        // The model reads the state fields in the order they are sent, and a different order can
+        // change an answer: an insertion-ordered object keeps the title ahead of the description on
+        // every run, where Map.of would shuffle them from one JVM to the next.
+        var state = JsonContent.object(
                 "issue_title", issue.issueTitle(),
                 "issue_description", issue.issueDescription());
         var response = typeSafeClient.systemOne(state, Map.of(QUESTION_ID, question));
