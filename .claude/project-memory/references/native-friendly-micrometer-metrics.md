@@ -24,7 +24,7 @@ deliberately no `outcome` or `exception` tag: one series per engine and model
 is what the engine comparison needs.
 
 The `model` value is read from the object that holds the effective setting —
-`ChatModel#getDefaultOptions().getModel()` on the LLM path, after the
+`ChatModel#getOptions().getModel()` on the LLM path, after the
 auto-configuration has merged the chat and connection properties, and
 `TypeSafeClient#defaultModel()` on the Jev path — never from a duplicated
 literal or a placeholder default, so the tag cannot disagree with the model

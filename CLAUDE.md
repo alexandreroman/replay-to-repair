@@ -113,7 +113,7 @@ and a `TYPESAFE_API_KEY` in `.env`.
 Each engine registers its own Micrometer `Timer` in its constructor, against
 the shared meter name `triage.owner.selection`; the `engine` tag (`llm` /
 `jev`) is what makes the two comparable across runs, and a `model` tag carries
-the model id each engine calls, read from `ChatModel#getDefaultOptions()` and
+the model id each engine calls, read from `ChatModel#getOptions()` and
 `TypeSafeClient#defaultModel()` so it cannot drift from what is sent. The
 meter is read on the worker's management port: at
 `http://localhost:8082/actuator/metrics/triage.owner.selection` for a quick

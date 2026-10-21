@@ -64,10 +64,9 @@ class LlmOwnerSelectorOfflineTest {
     private LlmOwnerSelector selectorRespondingWith(Generation... generations) {
         var chatModel = mock(ChatModel.class);
         var options = AnthropicChatOptions.builder().model(MODEL).build();
-        // getOptions() seeds the prompt sent on every call; getDefaultOptions() is where the
-        // selector reads the model id for its "model" meter tag.
+        // getOptions() both seeds the prompt sent on every call and is where the selector reads the
+        // model id for its "model" meter tag.
         given(chatModel.getOptions()).willReturn(options);
-        given(chatModel.getDefaultOptions()).willReturn(options);
         given(chatModel.call(any(Prompt.class))).willReturn(new ChatResponse(List.of(generations)));
         return new LlmOwnerSelector(chatClientFor(chatModel, options), chatModel, meterRegistry);
     }

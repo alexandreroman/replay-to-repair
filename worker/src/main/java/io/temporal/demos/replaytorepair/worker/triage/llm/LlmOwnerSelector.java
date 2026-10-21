@@ -32,13 +32,13 @@ class LlmOwnerSelector implements OwnerSelector {
     LlmOwnerSelector(ChatClient chatClient, ChatModel chatModel, MeterRegistry meterRegistry) {
         this.chatClient = chatClient;
         // Both engines report to this meter: "engine" tells the two apart and "model" records the
-        // model id each one calls. The model id comes from the ChatModel's default options, which
-        // hold it as the starter resolved it for the calls actually sent, rather than from a
-        // second reading of the property the starter itself binds.
+        // model id each one calls. The model id comes from the ChatModel's options, which hold it as
+        // the starter resolved it for the calls actually sent, rather than from a second reading of
+        // the property the starter itself binds.
         this.selectionTimer = Timer.builder("triage.owner.selection")
                 .description("Time taken by the selection engine to pick an owner")
                 .tag("engine", "llm")
-                .tag("model", chatModel.getDefaultOptions().getModel())
+                .tag("model", chatModel.getOptions().getModel())
                 .register(meterRegistry);
     }
 
